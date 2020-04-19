@@ -1,0 +1,17 @@
+
+1 + 2 // This is a comment
+//
+1 //
+
+/* multi-line */
+/* multi-
+line */
+
+/* level 1
+/* level 2
+/* level 3
+*/
+*/
+
+/* blah */
+*/
