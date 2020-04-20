@@ -18,7 +18,19 @@ public class GenerateAST {
       "Literal  : Object value",
       "Unary    : Token operator, Expr right",
       "Comma    : Expr left, Expr right",
-      "Ternary  : Expr condition, Expr true_expr, Expr false_expr"
+      "Ternary  : Expr condition, Expr true_expr, Expr false_expr",
+      "Variable : Token name",
+      "Assign   : Token name, Expr value",
+      "Logical  : Expr left, Token operator, Expr right"
+    ));
+
+    defineAst(outputDir, "Stmt", Arrays.asList(
+      "Expression : Expr expression",
+      "Print      : Expr expression",
+      "Var        : Token name, Expr initializer",
+      "Block      : List<Stmt> statements",
+      "If         : Expr condition, Stmt true_branch, Stmt false_branch",
+      "While      : Expr condition, Stmt body"
     ));
   }
 
@@ -42,8 +54,7 @@ public class GenerateAST {
     }
 
     // The base accept() method.
-    writer.println("  abstract <R> R accept(Visitor<R> visitor);");
-
+    writer.println("  abstract <R> R accept(final Visitor<R> visitor);");
     writer.println("}");
     writer.close();
   }
@@ -52,23 +63,30 @@ public class GenerateAST {
     writer.println("  static class " + className + " extends " + baseName + " {");
 
     // Constructor.
-    writer.println("    " + className + "(" + fieldList + ") {");
+    writer.print("    " + className + "(");
 
     // Store parameters in fields.
     final String[] fields = fieldList.split(", ");
+    boolean first = true;
+    for (final String field : fields) {
+      final String[] tokens = field.split(" ");
+      final String type = tokens[0], name = tokens[1];
+      if (first) { first = false; }
+      else { writer.print(", "); }
+      writer.print("final " + type + " " + name);
+    }
+    writer.println(") {");
     for (final String field : fields) {
       final String name = field.split(" ")[1];
       writer.println("      this." + name + " = " + name + ";");
     }
-
     writer.println("    }");
 
     // Visitor pattern.
     writer.println();
     writer.println("    @Override");
-    writer.println("    <R> R accept(Visitor<R> visitor) {");
-    writer.println("      return visitor.visit" +
-        className + baseName + "(this);");
+    writer.println("    <R> R accept(final Visitor<R> visitor) {");
+    writer.println("      return visitor.visit" + className + baseName + "(this);");
     writer.println("    }");
 
     // Fields.
@@ -86,7 +104,7 @@ public class GenerateAST {
 
     for (final String type : types) {
       final String typeName = type.split(":")[0].trim();
-      writer.println("    R visit" + typeName + baseName + "(" + typeName + " " + baseName.toLowerCase() + ");");
+      writer.println("    R visit" + typeName + baseName + "(final " + typeName + " " + baseName.toLowerCase() + ");");
     }
 
     writer.println("  }");

@@ -1,31 +1,45 @@
 package com.craftinginterpreters.lox;
 
-class Interpreter implements Expr.Visitor<Object> {
-  public void interpret(final Expr expression) {
-    try {
-      final Object value = evaluate(expression);
-      System.out.println(stringify(value));
-    } catch (RuntimeError error) {
-      Lox.runtimeError(error);
+import java.util.List;
+
+class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+  private Environment environment = new Environment();
+
+  public void interpret(final List<Stmt> statements) {
+      try {
+        for (final Stmt statement : statements) {
+          execute(statement);
+        }
+      } catch (final RuntimeError error) {
+        Lox.runtimeError(error);
+      }
     }
-  }
 
   public Object evaluate(final Expr expr) {
-    return expr.accept(this);
+    return (expr == null) ? null : expr.accept(this);
   }
 
-  private String stringify(Object object) {
-    if (object == null) return "nil";
+  private void execute(final Stmt stmt) {
+    if (stmt != null) stmt.accept(this);
+  }
 
-    // Hack. Work around Java adding ".0" to integer-valued doubles.
-    if (object instanceof Double) {
-      final String text = object.toString();
-      if (text.endsWith(".0"))
-        return text.substring(0, text.length() - 2);
-      else
-        return text;
+  public void executeBlock(final List<Stmt> statements, final Environment environment) {
+    final Environment previous = this.environment;
+    try {
+      this.environment = environment;
+      for (final Stmt statement : statements)
+        execute(statement);
+    } finally {
+      this.environment = previous;
     }
-    return object.toString();
+  }
+
+  private String stringify(final Object object) {
+    if (object == null) return "nil";
+    final String result = object.toString();
+    if (object instanceof Double && result.endsWith(".0"))
+      return result.substring(0, result.length() - 2);
+    return result;
   }
 
   private boolean isTruthy(final Object object) {
@@ -52,17 +66,17 @@ class Interpreter implements Expr.Visitor<Object> {
   }
 
   @Override
-  public Object visitLiteralExpr(Expr.Literal expr) {
+  public Object visitLiteralExpr(final Expr.Literal expr) {
     return expr.value;
   }
 
   @Override
-  public Object visitGroupingExpr(Expr.Grouping expr) {
+  public Object visitGroupingExpr(final Expr.Grouping expr) {
     return evaluate(expr.expression);
   }
 
   @Override
-  public Object visitUnaryExpr(Expr.Unary expr) {
+  public Object visitUnaryExpr(final Expr.Unary expr) {
     final Object right = evaluate(expr.right);
     switch (expr.operator.type) {
       case MINUS:
@@ -75,7 +89,7 @@ class Interpreter implements Expr.Visitor<Object> {
   }
 
   @Override
-  public Object visitBinaryExpr(Expr.Binary expr) {
+  public Object visitBinaryExpr(final Expr.Binary expr) {
     final Object left = evaluate(expr.left), right = evaluate(expr.right);
     switch (expr.operator.type) {
       case PLUS:
@@ -117,18 +131,82 @@ class Interpreter implements Expr.Visitor<Object> {
   }
 
   @Override
-  public Object visitTernaryExpr(Expr.Ternary expr) {
+  public Object visitTernaryExpr(final Expr.Ternary expr) {
     final Object condition = evaluate(expr.condition);
-    if (isTruthy(condition)) {
-      return evaluate(expr.true_expr);
-    } else {
-      return evaluate(expr.false_expr);
-    }
+    return isTruthy(condition) ? evaluate(expr.true_expr) : evaluate(expr.false_expr);
   }
 
   @Override
-  public Object visitCommaExpr(Expr.Comma expr) {
+  public Object visitCommaExpr(final Expr.Comma expr) {
     evaluate(expr.left);
     return evaluate(expr.right);
   }
+
+  @Override
+  public Object visitVariableExpr(final Expr.Variable expr) {
+    return environment.get(expr.name);
+  }
+
+  @Override
+  public Object visitAssignExpr(final Expr.Assign expr) {
+    final Object value = evaluate(expr.value);
+    environment.assign(expr.name, value);
+    return value;
+  }
+
+  @Override
+  public Object visitLogicalExpr(final Expr.Logical expr) {
+    final Object left = evaluate(expr.left);
+    if (expr.operator.type == TokenType.OR) {
+      if (isTruthy(left)) return left;
+    } else {
+      if (!isTruthy(left)) return left;
+    }
+    return evaluate(expr.right);
+  }
+
+  @Override
+  public Void visitExpressionStmt(final Stmt.Expression stmt) {
+    evaluate(stmt.expression);
+    return null;
+  }
+
+  @Override
+  public Void visitPrintStmt(final Stmt.Print stmt) {
+    final Object value = evaluate(stmt.expression);
+    System.out.println(stringify(value));
+    return null;
+  }
+
+  @Override
+  public Void visitVarStmt(final Stmt.Var stmt) {
+    final Object value = evaluate(stmt.initializer);
+    environment.define(stmt.name.lexeme, value);
+    return null;
+  }
+
+  @Override
+  public Void visitBlockStmt(final Stmt.Block stmt) {
+    executeBlock(stmt.statements, new Environment(environment));
+    return null;
+  }
+
+  @Override
+  public Void visitIfStmt(final Stmt.If stmt) {
+    if (isTruthy(evaluate(stmt.condition))) {
+      execute(stmt.true_branch);
+    } else {
+      execute(stmt.false_branch);
+    }
+    return null;
+  }
+
+  @Override
+  public Void visitWhileStmt(final Stmt.While stmt) {
+    while (isTruthy(evaluate(stmt.condition))) {
+      execute(stmt.body);
+    }
+    return null;
+  }
+
 }
