@@ -1,5 +1,7 @@
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
+import java.util.List;
 import com.craftinginterpreters.lox.Expr;
 
 // Creates an unambiguous, if ugly, string representation of AST nodes.
@@ -21,7 +23,10 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
   public String visitLiteralExpr(final Expr.Literal expr) {
     if (expr.value == null) return "nil";
     if (expr.value instanceof String) return "\"" + expr.value + "\"";
-    return expr.value.toString();
+    final String result = expr.value.toString();
+    if (expr.value instanceof Double && result.endsWith(".0"))
+      return result.substring(0, result.length() - 2);
+    return result;
   }
 
   @Override
@@ -55,6 +60,11 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
   }
 
   @Override
+  public String visitCallExpr(final Expr.Call expr) {
+    return parenthesize(print(expr.callee), expr.arguments.toArray(new Expr[]{}));
+  }
+
+  @Override
   public String visitVarStmt(final Stmt.Var stmt) {
     return parenthesize("let", new Expr.Variable(stmt.name), stmt.initializer);
   }
@@ -76,12 +86,29 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
   @Override
   public String visitIfStmt(final Stmt.If stmt) {
-    return parenthesize("cond", new Stmt.Expression(stmt.condition), stmt.true_branch, stmt.false_branch);
+    if (stmt.false_branch == null)
+      return parenthesize("cond", new Stmt.Expression(stmt.condition), stmt.true_branch);
+    else
+      return parenthesize("cond", new Stmt.Expression(stmt.condition), stmt.true_branch, stmt.false_branch);
   }
 
   @Override
   public String visitWhileStmt(final Stmt.While stmt) {
     return parenthesize("loop", new Stmt.Expression(stmt.condition), stmt.body);
+  }
+
+  @Override
+  public String visitFunctionStmt(final Stmt.Function stmt) {
+    final List<Expr> params = new ArrayList<>();
+    for (final Token token : stmt.params)
+      params.add(new Expr.Variable(token));
+    final String signature = parenthesize(stmt.name.lexeme, params.toArray(new Expr[]{}));
+    return parenthesize("define " + signature, stmt.body.toArray(new Stmt[]{}));
+  }
+
+  @Override
+  public String visitReturnStmt(final Stmt.Return stmt) {
+    return parenthesize("return", stmt.value);
   }
 
   private String parenthesize(String name, Expr... exprs) {

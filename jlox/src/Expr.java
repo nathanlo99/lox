@@ -13,6 +13,7 @@ abstract class Expr {
     R visitVariableExpr(final Variable expr);
     R visitAssignExpr(final Assign expr);
     R visitLogicalExpr(final Logical expr);
+    R visitCallExpr(final Call expr);
   }
 
   static class Binary extends Expr {
@@ -148,6 +149,23 @@ abstract class Expr {
     final Expr left;
     final Token operator;
     final Expr right;
+  }
+
+  static class Call extends Expr {
+    Call(final Expr callee, final Token paren, final List<Expr> arguments) {
+      this.callee = callee;
+      this.paren = paren;
+      this.arguments = arguments;
+    }
+
+    @Override
+    <R> R accept(final Visitor<R> visitor) {
+      return visitor.visitCallExpr(this);
+    }
+
+    final Expr callee;
+    final Token paren;
+    final List<Expr> arguments;
   }
 
   abstract <R> R accept(final Visitor<R> visitor);

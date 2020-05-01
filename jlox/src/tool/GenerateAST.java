@@ -21,7 +21,8 @@ public class GenerateAST {
       "Ternary  : Expr condition, Expr true_expr, Expr false_expr",
       "Variable : Token name",
       "Assign   : Token name, Expr value",
-      "Logical  : Expr left, Token operator, Expr right"
+      "Logical  : Expr left, Token operator, Expr right",
+      "Call     : Expr callee, Token paren, List<Expr> arguments"
     ));
 
     defineAst(outputDir, "Stmt", Arrays.asList(
@@ -30,7 +31,9 @@ public class GenerateAST {
       "Var        : Token name, Expr initializer",
       "Block      : List<Stmt> statements",
       "If         : Expr condition, Stmt true_branch, Stmt false_branch",
-      "While      : Expr condition, Stmt body"
+      "While      : Expr condition, Stmt body",
+      "Function   : Token name, List<Token> params, List<Stmt> body",
+      "Return     : Token keyword, Expr value"
     ));
   }
 

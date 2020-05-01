@@ -7,15 +7,21 @@ import static com.craftinginterpreters.lox.TokenType.*;
 
 /*
 program        → declaration* EOF ;
-declaration    → variableDecl
+declaration    → functionDecl
+                | variableDecl
                 | statement ;
+functionDecl   → "fun" function ;
+function       → IDENTIFIER "(" parameters? ")" block ;
+parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 variableDecl   → "var" IDENTIFIER ( "=" expression )? ";" ;
-statement      → exprStmt
+statement      → returnStmt
+                | exprStmt
                 | printStmt
                 | ifStmt
                 | whileStmt
                 | forStmt
                 | block ;
+returnStmt     → "return" expression? ";" ;
 forStmt        → "for" "(" ( variableDecl | exprStmt | ";")
                             expression? ";"
                             expression? ")" statement ;
@@ -35,7 +41,9 @@ comparison     → addition? ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 sum            → product? ( ( "-" | "+" ) product )* ;
 product        → unary? ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary
-                | primary ;
+                | call ;
+call           → primary ( "(" arguments? ")" )* ;
+arguments      → expression ( "," expression )* ;
 primary        → NUMBER | STRING
                 | "false" | "true" | "nil"
                 | "(" _expression_ ")" ;
@@ -86,11 +94,30 @@ class Parser {
   private Stmt parseDeclaration() {
     try {
       if (match(VAR)) return parseVarDeclaration();
+      if (match(FUN)) return parseFunction("function");
       return parseStatement();
     } catch (ParseError error) {
       synchronize();
       return null;
     }
+  }
+
+  private Stmt.Function parseFunction(final String kind) {
+    final Token name = consume(IDENTIFIER, "Expected " + kind + " name.");
+    consume(LEFT_PAREN, "Expected '(' after " + kind + " name .");
+    final List<Token> parameters = new ArrayList<>();
+    if (!check(RIGHT_PAREN)) {
+      do {
+        if (parameters.size() >= 255) {
+          error(peek(), "Cannot have more than 255 parameters.");
+        }
+        parameters.add(consume(IDENTIFIER, "Expected parameter name."));
+      } while (match(COMMA));
+    }
+    consume(RIGHT_PAREN, "Expected ')' after paramters.");
+    consume(LEFT_BRACE, "Expected '{' before " + kind + " body.");
+    final List<Stmt> body = parseBlock();
+    return new Stmt.Function(name, parameters, body);
   }
 
   private Stmt parseVarDeclaration() {
@@ -106,7 +133,15 @@ class Parser {
     if (match(IF)) return parseIfStatement();
     if (match(WHILE)) return parseWhileStatement();
     if (match(FOR)) return parseForStatement();
+    if (match(RETURN)) return parseReturnStatement();
     return parseExpressionStatement();
+  }
+
+  private Stmt parseReturnStatement() {
+    final Token keyword = previous();
+    final Expr value = check(SEMICOLON) ? null : parseExpression();
+    consume(SEMICOLON, "Expected ';' after return value.");
+    return new Stmt.Return(keyword, value);
   }
 
   private Stmt parseForStatement() {
@@ -287,7 +322,33 @@ class Parser {
       final Expr right = parseUnary();
       return new Expr.Unary(operator, right);
     }
-    return parsePrimary();
+    return parseCall();
+  }
+
+  private Expr parseCall() {
+    // primary ( "(" arguments? ")" )*
+    Expr expr = parsePrimary();
+    while (true) {
+      if (match(LEFT_PAREN)) {
+        expr = finishCall(expr);
+      } else {
+        break;
+      }
+    }
+    return expr;
+  }
+
+  private Expr finishCall(final Expr callee) {
+    List<Expr> arguments = new ArrayList<>();
+    if (!check(RIGHT_PAREN)) {
+      do {
+        if (arguments.size() >= 255)
+          error(peek(), "Cannot have more than 255 arguments.");
+        arguments.add(parseAssignment());
+      } while (match(COMMA));
+    }
+    final Token paren = consume(RIGHT_PAREN, "Expected ')' after arguments.");
+    return new Expr.Call(callee, paren, arguments);
   }
 
   private Expr parsePrimary() {

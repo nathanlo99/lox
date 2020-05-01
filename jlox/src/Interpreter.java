@@ -1,19 +1,34 @@
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-  private Environment environment = new Environment();
+  final Environment globals = new Environment();
+  private Environment environment = globals;
+
+  Interpreter() {
+    globals.define("clock", new LoxCallable() {
+      @Override
+      public int arity() { return 0; }
+      @Override
+      public String toString() { return "<native fn>"; }
+      @Override
+      public Object call(Interpreter interpreter, List<Object> arguments) {
+        return (double)System.currentTimeMillis() / 1000.0;
+      }
+    });
+  }
 
   public void interpret(final List<Stmt> statements) {
-      try {
-        for (final Stmt statement : statements) {
-          execute(statement);
-        }
-      } catch (final RuntimeError error) {
-        Lox.runtimeError(error);
+    try {
+      for (final Stmt statement : statements) {
+        execute(statement);
       }
+    } catch (final RuntimeError error) {
+      Lox.runtimeError(error);
     }
+  }
 
   public Object evaluate(final Expr expr) {
     return (expr == null) ? null : expr.accept(this);
@@ -166,6 +181,22 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   }
 
   @Override
+  public Object visitCallExpr(final Expr.Call expr) {
+    final Object callee = evaluate(expr.callee);
+    final List<Object> arguments = new ArrayList<>();
+    for (final Expr argument : expr.arguments) {
+      arguments.add(evaluate(argument));
+    }
+    if (!(callee instanceof LoxCallable))
+      throw new RuntimeError(expr.paren, "Expression not callable");
+    final LoxCallable function = (LoxCallable) callee;
+    if (arguments.size() != function.arity()) {
+      throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
+    }
+    return function.call(this, arguments);
+  }
+
+  @Override
   public Void visitExpressionStmt(final Stmt.Expression stmt) {
     evaluate(stmt.expression);
     return null;
@@ -209,4 +240,15 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     return null;
   }
 
+  @Override
+  public Void visitFunctionStmt(final Stmt.Function stmt) {
+    final LoxFunction function = new LoxFunction(stmt, environment);
+    environment.define(stmt.name.lexeme, function);
+    return null;
+  }
+
+  @Override
+  public Void visitReturnStmt(final Stmt.Return stmt) {
+    throw new Return(evaluate(stmt.value));
+  }
 }
