@@ -14,13 +14,17 @@ functionDecl   → "fun" function ;
 function       → IDENTIFIER "(" parameters? ")" block ;
 parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 variableDecl   → "var" IDENTIFIER ( "=" expression )? ";" ;
-statement      → returnStmt
+statement      → continueStmt
+                | breakStmt
+                | returnStmt
                 | exprStmt
                 | printStmt
                 | ifStmt
                 | whileStmt
                 | forStmt
                 | block ;
+continueStmt   → "continue" ";" ;
+breakStmt      → "break" ";" ;
 returnStmt     → "return" expression? ";" ;
 forStmt        → "for" "(" ( variableDecl | exprStmt | ";")
                             expression? ";"
@@ -134,7 +138,21 @@ class Parser {
     if (match(WHILE)) return parseWhileStatement();
     if (match(FOR)) return parseForStatement();
     if (match(RETURN)) return parseReturnStatement();
+    if (match(BREAK)) return parseBreakStatement();
+    if (match(CONTINUE)) return parseContinueStatement();
     return parseExpressionStatement();
+  }
+
+  private Stmt parseContinueStatement() {
+    final Token keyword = previous();
+    consume(SEMICOLON, "Expected ';' after continue.");
+    return new Stmt.Continue(keyword);
+  }
+
+  private Stmt parseBreakStatement() {
+    final Token keyword = previous();
+    consume(SEMICOLON, "Expected ';' after break.");
+    return new Stmt.Break(keyword);
   }
 
   private Stmt parseReturnStatement() {
@@ -154,12 +172,21 @@ class Parser {
     final Stmt body = parseStatement();
 
     // De-sugar (NOTE: null represents a no-op)
+    final Token tmp_first = new Token(IDENTIFIER, "first_" + body.hashCode());
     return new Stmt.Block(Arrays.asList(
       init,
-      new Stmt.While(condition,
+      new Stmt.Var(tmp_first, new Expr.Literal(true)),
+      new Stmt.While(new Expr.Literal(true),
         new Stmt.Block(Arrays.asList(
-          body,
-          new Stmt.Expression(increment)
+          new Stmt.If(new Expr.Variable(tmp_first),
+            new Stmt.Expression(new Expr.Assign(tmp_first, new Expr.Literal(false))),
+            new Stmt.Expression(increment)
+          ),
+          new Stmt.If(new Expr.Unary(new Token(BANG, "!"), condition),
+            new Stmt.Break(null),
+            null
+          ),
+          body
         )))
     ));
   }

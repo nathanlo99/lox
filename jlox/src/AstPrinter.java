@@ -6,8 +6,11 @@ import com.craftinginterpreters.lox.Expr;
 
 // Creates an unambiguous, if ugly, string representation of AST nodes.
 class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
-  String print(final Stmt stmt) { return stmt.accept(this); }
-  String print(final Expr expr) { return expr.accept(this); }
+  private int block_depth = 0;
+  private String block_indent = "";
+
+  String print(final Stmt stmt) { return block_indent + (stmt == null ? "" : stmt.accept(this)); }
+  String print(final Expr expr) { return block_indent + (expr == null ? "" : expr.accept(this)); }
 
   @Override
   public String visitBinaryExpr(final Expr.Binary expr) {
@@ -19,10 +22,14 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     return parenthesize("group", expr.expression);
   }
 
+  private String escapeString(final String str) {
+    return str.replace("\n", "\\n").replace("\t", "\\t");
+  }
+
   @Override
   public String visitLiteralExpr(final Expr.Literal expr) {
     if (expr.value == null) return "nil";
-    if (expr.value instanceof String) return "\"" + expr.value + "\"";
+    if (expr.value instanceof String) return "\"" + escapeString((String)expr.value) + "\"";
     final String result = expr.value.toString();
     if (expr.value instanceof Double && result.endsWith(".0"))
       return result.substring(0, result.length() - 2);
@@ -66,7 +73,7 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
   @Override
   public String visitVarStmt(final Stmt.Var stmt) {
-    return parenthesize("let", new Expr.Variable(stmt.name), stmt.initializer);
+    return parenthesize("var", new Expr.Variable(stmt.name), stmt.initializer);
   }
 
   @Override
@@ -76,7 +83,7 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
   @Override
   public String visitExpressionStmt(final Stmt.Expression stmt) {
-    return stmt.expression.accept(this);
+    return stmt.expression == null ? "" : stmt.expression.accept(this);
   }
 
   @Override
@@ -94,7 +101,17 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
   @Override
   public String visitWhileStmt(final Stmt.While stmt) {
-    return parenthesize("loop", new Stmt.Expression(stmt.condition), stmt.body);
+    return parenthesize("while", new Stmt.Expression(stmt.condition), stmt.body);
+  }
+
+  @Override
+  public String visitBreakStmt(final Stmt.Break stmt) {
+    return "(break)";
+  }
+
+  @Override
+  public String visitContinueStmt(final Stmt.Continue stmt) {
+    return "(continue)";
   }
 
   @Override
@@ -115,21 +132,26 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     StringBuilder builder = new StringBuilder();
     builder.append("(").append(name);
     for (final Expr expr : exprs) {
-      builder.append(" ");
-      builder.append(expr.accept(this));
+      if (expr == null) continue;
+      builder.append(" ").append(expr.accept(this));
     }
     builder.append(")");
     return builder.toString();
   }
 
   private String parenthesize(String name, Stmt... stmts) {
+    final String old_indent = block_indent;
+    block_indent = old_indent + "  ";
     StringBuilder builder = new StringBuilder();
     builder.append("(").append(name).append("\n");
+    block_depth += 1;
     for (final Stmt stmt : stmts) {
-      builder.append(stmt.accept(this));
-      builder.append("\n");
+      if (stmt == null) continue;
+      builder.append(print(stmt)).append("\n");
     }
-    builder.append(")");
+    block_depth -= 1;
+    block_indent = old_indent;
+    builder.append(old_indent).append(")");
     return builder.toString();
   }
 }

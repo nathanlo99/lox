@@ -7,7 +7,14 @@ class Token {
   final int line;
   final int start_column, end_column;
 
-  Token(TokenType type, String lexeme, Object literal, int line, int start_column, int end_column) {
+  Token(final TokenType type, final String lexeme) {
+    this.type = type;
+    this.lexeme = lexeme;
+    this.literal = null;
+    this.line = this.start_column = this.end_column = -1;
+  }
+
+  Token(final TokenType type, final String lexeme, final Object literal, final int line, final int start_column, final int end_column) {
     this.type = type;
     this.lexeme = lexeme;
     this.literal = literal;

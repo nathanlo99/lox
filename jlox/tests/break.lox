@@ -1,0 +1,18 @@
+
+for (var i = 0; i < 100; i = i + 1) {
+  print "The ceiling of square root of " + i + " is: ";
+  for (var j = 0; j <= i + 1; j = j + 1) {
+    if (j * j >= i) {
+      print j + "\n";
+      break;
+    }
+  }
+}
+
+var a = 1;
+for (; a < 10; a = a + 1) {
+  if (a == 3) continue;
+  if (a == 6) break;
+  print a + "\n";
+}
+print a + "\n";

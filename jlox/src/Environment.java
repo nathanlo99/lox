@@ -21,8 +21,16 @@ class Environment {
   Environment() { parent = null; }
   Environment(Environment parent) { this.parent = parent; }
 
-  void define(final String name, final Object value) {
-    values.put(name, new Value(true, value));
+  Environment ancestor(final int distance) {
+    Environment environment = this;
+    for (int i = 0; i < distance; i++) {
+      environment = environment.parent;
+    }
+    return environment;
+  }
+
+  void define(final String name, final boolean initialized, final Object value) {
+    values.put(name, new Value(initialized, value));
   }
 
   Object get(final Token name) {
@@ -36,6 +44,17 @@ class Environment {
     } else {
       throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
+  }
+
+  Object getAt(final int distance, final Token name) {
+    final Value value = ancestor(distance).values.get(name.lexeme);
+    if (!value.assigned)
+      throw new RuntimeError(name, "Accessing uninitialized variable '" + name.lexeme + "'.");
+    return value.value;
+  }
+
+  void assignAt(final int distance, final Token name, final Object value) {
+    ancestor(distance).values.put(name.lexeme, new Value(true, value));
   }
 
   void assign(final Token name, final Object value) {

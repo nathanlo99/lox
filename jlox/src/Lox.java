@@ -51,6 +51,8 @@ public class Lox {
     if (hadError) return;
     // for (final Token token : tokens) System.out.println(token);
     for (final Stmt stmt : statements) System.out.println(new AstPrinter().print(stmt));
+    new Resolver(interpreter).resolve(statements);
+    if (hadError) return;
     interpreter.interpret(statements);
   }
 

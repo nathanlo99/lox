@@ -1,2 +1,3 @@
 - break, continue
 - anonymous functions
+- resolver report error on unused local

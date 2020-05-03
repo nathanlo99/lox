@@ -4,7 +4,6 @@ fun makeCounter() {
     i = i + 1;
     print i;
   }
-
   return count;
 }
 

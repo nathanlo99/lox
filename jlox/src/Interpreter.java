@@ -2,13 +2,16 @@ package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   final Environment globals = new Environment();
   private Environment environment = globals;
+  private final Map<Expr, Integer> locals = new HashMap<>();
 
   Interpreter() {
-    globals.define("clock", new LoxCallable() {
+    globals.define("clock", true, new LoxCallable() {
       @Override
       public int arity() { return 0; }
       @Override
@@ -36,6 +39,28 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
   private void execute(final Stmt stmt) {
     if (stmt != null) stmt.accept(this);
+  }
+
+  public void resolve(final Expr expr, final int depth) {
+    locals.put(expr, depth);
+  }
+
+  private Object lookup(final Token name, final Expr expr) {
+    final Integer distance = locals.get(expr);
+    if (distance != null) {
+      return environment.getAt(distance, name);
+    } else {
+      return globals.get(name);
+    }
+  }
+
+  private void assign(final Token name, final Expr expr, final Object value) {
+    final Integer distance = locals.get(expr);
+    if (distance != null) {
+      environment.assignAt(distance, name, value);
+    } else {
+      globals.assign(name, value);
+    }
   }
 
   public void executeBlock(final List<Stmt> statements, final Environment environment) {
@@ -159,13 +184,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
   @Override
   public Object visitVariableExpr(final Expr.Variable expr) {
-    return environment.get(expr.name);
+    return lookup(expr.name, expr);
   }
 
   @Override
   public Object visitAssignExpr(final Expr.Assign expr) {
     final Object value = evaluate(expr.value);
-    environment.assign(expr.name, value);
+    assign(expr.name, expr, value);
     return value;
   }
 
@@ -205,14 +230,14 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   @Override
   public Void visitPrintStmt(final Stmt.Print stmt) {
     final Object value = evaluate(stmt.expression);
-    System.out.println(stringify(value));
+    System.out.print(stringify(value));
     return null;
   }
 
   @Override
   public Void visitVarStmt(final Stmt.Var stmt) {
     final Object value = evaluate(stmt.initializer);
-    environment.define(stmt.name.lexeme, value);
+    environment.define(stmt.name.lexeme, stmt.initializer != null, value);
     return null;
   }
 
@@ -235,7 +260,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   @Override
   public Void visitWhileStmt(final Stmt.While stmt) {
     while (isTruthy(evaluate(stmt.condition))) {
-      execute(stmt.body);
+      try {
+        execute(stmt.body);
+      } catch (final Break break_stmt) {
+        break;
+      } catch (final Continue continue_stmt) {
+        continue;
+      }
     }
     return null;
   }
@@ -243,12 +274,22 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   @Override
   public Void visitFunctionStmt(final Stmt.Function stmt) {
     final LoxFunction function = new LoxFunction(stmt, environment);
-    environment.define(stmt.name.lexeme, function);
+    environment.define(stmt.name.lexeme, true, function);
     return null;
   }
 
   @Override
   public Void visitReturnStmt(final Stmt.Return stmt) {
     throw new Return(evaluate(stmt.value));
+  }
+
+  @Override
+  public Void visitBreakStmt(final Stmt.Break stmt) {
+    throw new Break();
+  }
+
+  @Override
+  public Void visitContinueStmt(final Stmt.Continue stmt) {
+    throw new Continue();
   }
 }

@@ -33,7 +33,9 @@ public class GenerateAST {
       "If         : Expr condition, Stmt true_branch, Stmt false_branch",
       "While      : Expr condition, Stmt body",
       "Function   : Token name, List<Token> params, List<Stmt> body",
-      "Return     : Token keyword, Expr value"
+      "Return     : Token keyword, Expr value",
+      "Break      : Token keyword",
+      "Continue   : Token keyword"
     ));
   }
 
