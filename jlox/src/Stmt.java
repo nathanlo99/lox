@@ -90,10 +90,11 @@ abstract class Stmt {
   }
 
   static class Function extends Stmt {
-    Function(final Token name, final List<Token> params, final List<Stmt> body) {
+    Function(final Token name, final List<Token> params, final List<Stmt> body, final boolean is_static) {
       this.name = name;
       this.params = params;
       this.body = body;
+      this.is_static = is_static;
     }
 
     @Override
@@ -104,6 +105,7 @@ abstract class Stmt {
     final Token name;
     final List<Token> params;
     final List<Stmt> body;
+    final boolean is_static;
   }
 
   static class Return extends Stmt {

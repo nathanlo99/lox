@@ -3,7 +3,7 @@ package com.craftinginterpreters.lox;
 import java.util.List;
 
 interface Func {
-  Object call(final Interpreter interpreter, final List<Object> arguments);
+  Object call(final Interpreter interpreter, final List<Object> arguments, final Token caller);
 }
 
 class LoxNative implements LoxCallable {
@@ -19,8 +19,8 @@ class LoxNative implements LoxCallable {
     return arity;
   }
 
-  public Object call(final Interpreter interpreter, final List<Object> arguments) {
-    return func.call(interpreter, arguments);
+  public Object call(final Interpreter interpreter, final List<Object> arguments, final Token caller) {
+    return func.call(interpreter, arguments, caller);
   }
 
   public String toString() {

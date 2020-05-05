@@ -11,18 +11,24 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   private final Map<Expr, Integer> locals = new HashMap<>();
 
   Interpreter() {
-    globals.define("clock", true, new LoxNative(0, (interpreter, arguments) -> {
+    globals.define("clock", true, new LoxNative(0, (interpreter, arguments, caller) -> {
       return (double)System.currentTimeMillis() / 1000.0;
     }));
 
-    globals.define("print", true, new LoxNative(1, (interpreter, arguments) -> {
+    globals.define("print", true, new LoxNative(1, (interpreter, arguments, caller) -> {
       System.out.println(stringify(arguments.get(0)));
       return null;
     }));
 
-    globals.define("random", true, new LoxNative(2, (interpreter, arguments) -> {
+    globals.define("random", true, new LoxNative(2, (interpreter, arguments, caller) -> {
       final double a = (Double)arguments.get(0), b = (Double)arguments.get(1);
       return Math.random() * (b - a) + a;
+    }));
+
+    globals.define("assert", true, new LoxNative(1, (interpreter, arguments, caller) -> {
+      if (!isTruthy(arguments.get(0)))
+        throw new RuntimeError(caller, "Assertion failed");
+      return null;
     }));
   }
 
@@ -221,7 +227,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     if (arguments.size() != function.arity()) {
       throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
     }
-    return function.call(this, arguments);
+    return function.call(this, arguments, expr.paren);
   }
 
   @Override
@@ -294,7 +300,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
   @Override
   public Void visitFunctionStmt(final Stmt.Function stmt) {
-    final LoxFunction function = new LoxFunction(stmt, environment, false);
+    final LoxFunction function = new LoxFunction(stmt, environment, false, false, false);
     environment.define(stmt.name.lexeme, true, function);
     return null;
   }
@@ -317,11 +323,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   @Override
   public Void visitClassStmt(final Stmt.Class stmt) {
     environment.define(stmt.name.lexeme, false, null);
-
     final Map<String, LoxFunction> methods = new HashMap<>();
     for (final Stmt.Function method : stmt.methods) {
       final boolean is_initializer = method.name.lexeme.equals("init");
-      final LoxFunction function = new LoxFunction(method, environment, is_initializer);
+      final boolean is_static = method.is_static;
+      final LoxFunction function = new LoxFunction(method, environment, true, is_initializer, is_static);
       methods.put(method.name.lexeme, function);
     }
     final LoxClass _class = new LoxClass(stmt.name.lexeme, methods);

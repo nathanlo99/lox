@@ -4,11 +4,12 @@ package com.craftinginterpreters.lox;
 import java.util.List;
 import java.util.Map;
 
-class LoxClass implements LoxCallable {
+class LoxClass extends LoxInstance implements LoxCallable {
   final String name;
   final Map<String, LoxFunction> methods;
 
   LoxClass(final String name, final Map<String, LoxFunction> methods) {
+    super(null); this._class = this;
     this.name = name;
     this.methods = methods;
   }
@@ -21,11 +22,11 @@ class LoxClass implements LoxCallable {
   }
 
   @Override
-  public Object call(final Interpreter interpreter, final List<Object> arguments) {
+  public Object call(final Interpreter interpreter, final List<Object> arguments, final Token caller) {
     final LoxInstance instance = new LoxInstance(this);
     final LoxFunction initializer = findMethod("init");
     if (initializer != null)
-      initializer.bind(instance).call(interpreter, arguments);
+      initializer.bind(instance).call(interpreter, arguments, caller);
     return instance;
   }
 

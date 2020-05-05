@@ -49,9 +49,11 @@ class Environment {
   Object getAt(final int distance, final String name) {
     return getAt(distance, new Token(TokenType.IDENTIFIER, name));
   }
-  
+
   Object getAt(final int distance, final Token name) {
     final Value value = ancestor(distance).values.get(name.lexeme);
+    if (value == null)
+      throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'");
     if (!value.assigned)
       throw new RuntimeError(name, "Accessing uninitialized variable '" + name.lexeme + "'.");
     return value.value;

@@ -9,5 +9,30 @@ class Test {
   }
 }
 
-var test = Test(2, 3);
-test.print();
+fun run() {
+  var test = Test(2, 3);
+  test.print(); // "Hello, my things are 2 and 9"
+}
+run(); // Make sure normal functions aren't messed up
+
+class Math {
+  init(num) {
+    this.num = num;
+  }
+
+  static square(n) {
+    return n * n;
+  }
+
+  get() {
+    return this.num;
+  }
+}
+
+assert(Math.square(3) == 9);
+assert(Math(3).get() == 3);
+
+print("Result 1: " + Math.square(3)); // 9
+// print("Result 2: " + Math().square(3)); // ERROR
+print("Result 3: " + Math(3).get()); // 3
+// print("Result 4: " + Math.get()); // ERROR

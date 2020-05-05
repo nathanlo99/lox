@@ -32,6 +32,7 @@ class Scanner {
     keywords.put("or",       OR);
     keywords.put("return",   RETURN);
     keywords.put("super",    SUPER);
+    keywords.put("static",   STATIC);
     keywords.put("this",     THIS);
     keywords.put("true",     TRUE);
     keywords.put("var",      VAR);

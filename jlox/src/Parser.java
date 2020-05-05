@@ -11,7 +11,7 @@ declaration    → classDecl
                 | functionDecl
                 | variableDecl
                 | statement ;
-classDecl      → "class" IDENTIFIER "{" function* "}" ;
+classDecl      → "class" IDENTIFIER "{" ( "class"? function )* "}" ;
 functionDecl   → "fun" function ;
 function       → IDENTIFIER "(" parameters? ")" block ;
 parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
@@ -98,7 +98,7 @@ class Parser {
   private Stmt parseDeclaration() {
     try {
       if (match(VAR)) return parseVarDeclaration();
-      if (match(FUN)) return parseFunction("function");
+      if (match(FUN)) return parseFunction("function", false);
       if (match(CLASS)) return parseClassDeclaration();
       return parseStatement();
     } catch (final ParseError error) {
@@ -112,13 +112,14 @@ class Parser {
     consume(LEFT_BRACE, "Expected '{' before class body.");
     final List<Stmt.Function> methods = new ArrayList<>();
     while (!check(RIGHT_BRACE) && !isAtEnd()) {
-      methods.add(parseFunction("method"));
+      final boolean is_static = match(STATIC);
+      methods.add(parseFunction("method", is_static));
     }
     consume(RIGHT_BRACE, "Expected '}' after class body.");
     return new Stmt.Class(name, methods);
   }
 
-  private Stmt.Function parseFunction(final String kind) {
+  private Stmt.Function parseFunction(final String kind, final boolean is_static) {
     final Token name = consume(IDENTIFIER, "Expected " + kind + " name.");
     consume(LEFT_PAREN, "Expected '(' after " + kind + " name .");
     final List<Token> parameters = new ArrayList<>();
@@ -133,7 +134,7 @@ class Parser {
     consume(RIGHT_PAREN, "Expected ')' after paramters.");
     consume(LEFT_BRACE, "Expected '{' before " + kind + " body.");
     final List<Stmt> body = parseBlock();
-    return new Stmt.Function(name, parameters, body);
+    return new Stmt.Function(name, parameters, body, is_static);
   }
 
   private Stmt parseVarDeclaration() {
