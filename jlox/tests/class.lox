@@ -58,13 +58,13 @@ class Chain {
   }
 
   next {
-    println("Getting next for " + this);
+    // println("Getting next for " + this);
     return this.nxt;
   }
 }
 
 var test = Chain(Chain(Chain(Chain(nil))));
-print(test.next.next.next.next);
+println(test.next.next.next.next);
 
 class Counter {
   static {
@@ -91,3 +91,19 @@ var test_counter_6 = Counter();
 var test_counter_7 = Counter();
 var test_counter_8 = Counter();
 println(Counter.counter);
+
+class Weird {
+  init(n) {
+    this.n = n;
+  }
+
+  callback {
+    fun adder(x) {
+      return this.n + x;
+    }
+    return adder;
+  }
+}
+
+var weird = Weird(10);
+println(weird.callback(5));

@@ -334,7 +334,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       final boolean is_initializer = method.name.lexeme.equals("init");
       final boolean is_static_init = method.name.lexeme.equals("static");
       final boolean is_static_get = method.is_static && method.is_getter;
-      final LoxFunctionType type = is_initializer   ? LoxFunctionType.INITIALIZER :
+      final LoxFunctionType type = is_static_init   ? LoxFunctionType.STATIC_INIT :
+                                   is_initializer   ? LoxFunctionType.INITIALIZER :
                                    is_static_get    ? LoxFunctionType.STATIC_GETTER :
                                    method.is_static ? LoxFunctionType.STATIC_METHOD :
                                    method.is_getter ? LoxFunctionType.INSTANCE_GETTER :

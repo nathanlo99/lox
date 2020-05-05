@@ -5,6 +5,7 @@ import java.util.List;
 enum LoxFunctionType {
   FUNCTION,
   INITIALIZER,
+  STATIC_INIT,
   STATIC_GETTER,
   STATIC_METHOD,
   INSTANCE_GETTER,
@@ -15,11 +16,15 @@ class LoxFunction implements LoxCallable {
   private final Stmt.Function declaration;
   private final Environment closure;
   final LoxFunctionType type;
+  final boolean is_static;
 
   LoxFunction(final Stmt.Function declaration, final Environment closure, final LoxFunctionType type) {
     this.declaration = declaration;
     this.closure = closure;
     this.type = type;
+    this.is_static = (type == LoxFunctionType.STATIC_METHOD)
+                  || (type == LoxFunctionType.STATIC_GETTER)
+                  || (type == LoxFunctionType.STATIC_INIT);
   }
 
   LoxFunction bind(final LoxInstance instance) {
@@ -38,7 +43,6 @@ class LoxFunction implements LoxCallable {
     final Environment environment = new Environment(closure);
     final Object _this = type == LoxFunctionType.FUNCTION ? null : closure.getAt(0, "this");
     if (type != LoxFunctionType.FUNCTION) { // Check static rules
-      final boolean is_static = (type == LoxFunctionType.STATIC_METHOD) | (type == LoxFunctionType.STATIC_GETTER);
       if (is_static && !(_this instanceof LoxClass))
         throw new RuntimeError(caller, "Cannot call static function from instance.");
       else if (!is_static && _this instanceof LoxClass)
