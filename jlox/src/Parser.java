@@ -11,7 +11,11 @@ declaration    → classDecl
                 | functionDecl
                 | variableDecl
                 | statement ;
-classDecl      → "class" IDENTIFIER "{" ( "class"? function )* "}" ;
+classDecl      → "class" IDENTIFIER "{" methodDecl* "}" ;
+methodDecl     → IDENTIFIER "(" parameters? ")" block
+                | "static" IDENTIFIER "(" parameters? ")" block
+                | IDENTIFIER block
+                | "static" block ;
 functionDecl   → "fun" function ;
 function       → IDENTIFIER "(" parameters? ")" block ;
 parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
@@ -112,11 +116,20 @@ class Parser {
     consume(LEFT_BRACE, "Expected '{' before class body.");
     final List<Stmt.Function> methods = new ArrayList<>();
     while (!check(RIGHT_BRACE) && !isAtEnd()) {
-      final boolean is_static = match(STATIC);
-      methods.add(parseFunction("method", is_static));
+      methods.add(parseMethod());
     }
     consume(RIGHT_BRACE, "Expected '}' after class body.");
     return new Stmt.Class(name, methods);
+  }
+
+  private Stmt.Function parseMethod() {
+    Token static_keyword = null;
+    if (check(STATIC)) static_keyword = consume(STATIC, "Never fails");
+    if (static_keyword != null && match(LEFT_BRACE)) { // Static block
+      final List<Stmt> body = parseBlock();
+      return new Stmt.Function(static_keyword, new ArrayList<>(), body, true, false);
+    }
+    return parseFunction("method", static_keyword != null);
   }
 
   private Stmt.Function parseFunction(final String kind, final boolean is_static) {

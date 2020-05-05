@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import javafx.util.Pair;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   final Environment globals = new Environment();
@@ -16,6 +17,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }));
 
     globals.define("print", true, new LoxNative(1, (interpreter, arguments, caller) -> {
+      System.out.print(stringify(arguments.get(0)));
+      return null;
+    }));
+    globals.define("println", true, new LoxNative(1, (interpreter, arguments, caller) -> {
       System.out.println(stringify(arguments.get(0)));
       return null;
     }));
@@ -324,17 +329,29 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   public Void visitClassStmt(final Stmt.Class stmt) {
     environment.define(stmt.name.lexeme, false, null);
     final Map<String, LoxFunction> methods = new HashMap<>();
+    final List<Pair<LoxFunction, Token>> static_blocks = new ArrayList<>();
     for (final Stmt.Function method : stmt.methods) {
       final boolean is_initializer = method.name.lexeme.equals("init");
+      final boolean is_static_init = method.name.lexeme.equals("static");
+      final boolean is_static_get = method.is_static && method.is_getter;
       final LoxFunctionType type = is_initializer   ? LoxFunctionType.INITIALIZER :
+                                   is_static_get    ? LoxFunctionType.STATIC_GETTER :
                                    method.is_static ? LoxFunctionType.STATIC_METHOD :
-                                   method.is_getter ? LoxFunctionType.GETTER :
+                                   method.is_getter ? LoxFunctionType.INSTANCE_GETTER :
                                                       LoxFunctionType.INSTANCE_METHOD;
       final LoxFunction function = new LoxFunction(method, environment, type);
-      methods.put(method.name.lexeme, function);
+      if (is_static_init)
+        static_blocks.add(new Pair<>(function, method.name));
+      else
+        methods.put(method.name.lexeme, function);
     }
     final LoxClass _class = new LoxClass(stmt.name.lexeme, methods, this);
     environment.assign(stmt.name, _class);
+    for (final Pair<LoxFunction, Token> pair : static_blocks) {
+      final LoxFunction static_method = pair.getKey();
+      final Token keyword = pair.getValue();
+      static_method.bind((LoxInstance)_class).call(this, new ArrayList<>(), keyword);
+    }
     return null;
   }
 }

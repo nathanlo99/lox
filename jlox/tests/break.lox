@@ -1,10 +1,10 @@
 
 var start = clock();
-for (var i = 0; i < 50000; i = i + 1) {
+for (var i = 0; i < 20; i = i + 1) {
   print("The ceiling of square root of " + i + " is: ");
   for (var j = 0; j <= i + 1; j = j + 1) {
     if (j * j >= i) {
-      print(j);
+      println(j);
       break;
     }
   }
@@ -16,6 +16,6 @@ var a;
 for (a = 1; a < 10; a = a + 1) {
   if (a == 3) continue;
   if (a == 6) break;
-  print(a);
+  println(a);
 }
-print(a);
+println(a);

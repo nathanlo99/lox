@@ -22,7 +22,7 @@ class LoxInstance {
     final LoxFunction method = _class.findMethod(name.lexeme);
     if (method != null) {
       final LoxFunction bound_method = method.bind(this);
-      if (method.type == LoxFunctionType.GETTER)
+      if (method.type == LoxFunctionType.INSTANCE_GETTER || method.type == LoxFunctionType.STATIC_GETTER)
         return bound_method.call(_class.interpreter, new ArrayList<Object>(), name);
       return bound_method;
     }
@@ -35,7 +35,8 @@ class LoxInstance {
       throw new RuntimeError(name, "Undefined property '" + name.lexeme + "' assigned to.");
     }
     final LoxFunction method = _class.findMethod(name.lexeme);
-    if (method != null && method.type == LoxFunctionType.GETTER) {
+    if (method != null &&
+       (method.type == LoxFunctionType.INSTANCE_GETTER || method.type == LoxFunctionType.STATIC_GETTER)) {
       throw new RuntimeError(name, "Cannot assign to getter.");
     }
     fields.put(name.lexeme, value);

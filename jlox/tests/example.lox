@@ -1,6 +1,6 @@
 
 for (var i = 1; i < 5; i = i + 1) {
-  print(i * i);
+  println(i * i);
 }
 
 class Duck {
@@ -9,7 +9,7 @@ class Duck {
   }
 
   quack() {
-    print(this.name + " quacks");
+    println(this.name + " quacks");
   }
 }
 
@@ -23,5 +23,5 @@ fun make_adder(n) {
   return adder;
 }
 var add5 = make_adder(5);
-print(add5(1));
-print(add5(100));
+println(add5(1));
+println(add5(100));

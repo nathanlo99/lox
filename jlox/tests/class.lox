@@ -5,7 +5,7 @@ class Test {
   }
 
   print() {
-    print("Hello, my things are " + this.a + " and " + this.b);
+    println("Hello, my things are " + this.a + " and " + this.b);
   }
 }
 
@@ -32,10 +32,10 @@ class Math {
 assert(Math.square(3) == 9);
 assert(Math(3).get() == 3);
 
-print("Result 1: " + Math.square(3)); // 9
-// print("Result 2: " + Math().square(3)); // ERROR
-print("Result 3: " + Math(3).get()); // 3
-// print("Result 4: " + Math.get()); // ERROR
+println("Result 1: " + Math.square(3)); // 9
+// println("Result 2: " + Math().square(3)); // ERROR
+println("Result 3: " + Math(3).get()); // 3
+// println("Result 4: " + Math.get()); // ERROR
 
 class Circle {
   init(radius) {
@@ -48,4 +48,46 @@ class Circle {
 }
 
 var circle = Circle(4);
-print(circle.area); // Prints roughly "50.2655".
+println(circle.area); // Prints roughly "50.2655".
+
+// Getter chaining?
+
+class Chain {
+  init(nxt) {
+    this.nxt = nxt;
+  }
+
+  next {
+    println("Getting next for " + this);
+    return this.nxt;
+  }
+}
+
+var test = Chain(Chain(Chain(Chain(nil))));
+print(test.next.next.next.next);
+
+class Counter {
+  static {
+    println("This is the static block running");
+    this._counter = 0;
+  }
+
+  init() {
+    Counter._counter = Counter._counter + 1;
+  }
+
+  static counter {
+    println("Running accessor");
+    return Counter._counter;
+  }
+}
+
+var test_counter_1 = Counter();
+var test_counter_2 = Counter();
+var test_counter_3 = Counter();
+var test_counter_4 = Counter();
+var test_counter_5 = Counter();
+var test_counter_6 = Counter();
+var test_counter_7 = Counter();
+var test_counter_8 = Counter();
+println(Counter.counter);

@@ -1,5 +1,4 @@
 - anonymous functions
 - resolver report error on unused local
-- more natives
-- static methods
-- getters / setters
+- setters
+- function overriding
