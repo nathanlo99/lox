@@ -22,7 +22,7 @@ class LoxInstance {
     final LoxFunction method = _class.findMethod(name.lexeme);
     if (method != null) {
       final LoxFunction bound_method = method.bind(this);
-      if (method.is_getter)
+      if (method.type == LoxFunctionType.GETTER)
         return bound_method.call(_class.interpreter, new ArrayList<Object>(), name);
       return bound_method;
     }
@@ -33,6 +33,10 @@ class LoxInstance {
   void set(final Token name, final Object value) {
     if (!Lox.allowFieldCreation && !fields.containsKey(name.lexeme)) {
       throw new RuntimeError(name, "Undefined property '" + name.lexeme + "' assigned to.");
+    }
+    final LoxFunction method = _class.findMethod(name.lexeme);
+    if (method != null && method.type == LoxFunctionType.GETTER) {
+      throw new RuntimeError(name, "Cannot assign to getter.");
     }
     fields.put(name.lexeme, value);
   }

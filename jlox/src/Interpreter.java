@@ -300,7 +300,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
   @Override
   public Void visitFunctionStmt(final Stmt.Function stmt) {
-    final LoxFunction function = new LoxFunction(stmt, environment, false, false, false, false);
+    final LoxFunction function = new LoxFunction(stmt, environment, LoxFunctionType.FUNCTION);
     environment.define(stmt.name.lexeme, true, function);
     return null;
   }
@@ -326,9 +326,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final Map<String, LoxFunction> methods = new HashMap<>();
     for (final Stmt.Function method : stmt.methods) {
       final boolean is_initializer = method.name.lexeme.equals("init");
-      final boolean is_static = method.is_static;
-      final boolean is_getter = method.is_getter;
-      final LoxFunction function = new LoxFunction(method, environment, true, is_initializer, is_static, is_getter);
+      final LoxFunctionType type = is_initializer   ? LoxFunctionType.INITIALIZER :
+                                   method.is_static ? LoxFunctionType.STATIC_METHOD :
+                                   method.is_getter ? LoxFunctionType.GETTER :
+                                                      LoxFunctionType.INSTANCE_METHOD;
+      final LoxFunction function = new LoxFunction(method, environment, type);
       methods.put(method.name.lexeme, function);
     }
     final LoxClass _class = new LoxClass(stmt.name.lexeme, methods, this);

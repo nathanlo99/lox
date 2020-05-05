@@ -10,7 +10,6 @@ class Test {
 }
 
 fun run() {
-  return this;
   var test = Test(2, 3);
   test.print(); // "Hello, my things are 2 and 9"
 }
@@ -37,3 +36,16 @@ print("Result 1: " + Math.square(3)); // 9
 // print("Result 2: " + Math().square(3)); // ERROR
 print("Result 3: " + Math(3).get()); // 3
 // print("Result 4: " + Math.get()); // ERROR
+
+class Circle {
+  init(radius) {
+    this.radius = radius;
+  }
+
+  area {
+    return 3.141592653 * this.radius * this.radius;
+  }
+}
+
+var circle = Circle(4);
+print(circle.area); // Prints roughly "50.2655".
