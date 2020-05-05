@@ -30,7 +30,6 @@ class Scanner {
     keywords.put("if",       IF);
     keywords.put("nil",      NIL);
     keywords.put("or",       OR);
-    keywords.put("print",    PRINT);
     keywords.put("return",   RETURN);
     keywords.put("super",    SUPER);
     keywords.put("this",     THIS);
@@ -89,7 +88,6 @@ class Scanner {
   private void scanToken() {
     final int old_line = line, old_column = cur_column;
     final char c = peek(); advance();
-    // System.out.println("Scanning token '" + c + "' at " + old_line + ":" + old_column);
     if (isDigit(c)) {
       scanNumber();
       return;

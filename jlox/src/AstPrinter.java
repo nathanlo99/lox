@@ -6,11 +6,10 @@ import com.craftinginterpreters.lox.Expr;
 
 // Creates an unambiguous, if ugly, string representation of AST nodes.
 class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
-  private int block_depth = 0;
   private String block_indent = "";
 
   String print(final Stmt stmt) { return block_indent + (stmt == null ? "" : stmt.accept(this)); }
-  String print(final Expr expr) { return block_indent + (expr == null ? "" : expr.accept(this)); }
+  String print(final Expr expr) { return expr == null ? "" : expr.accept(this); }
 
   @Override
   public String visitBinaryExpr(final Expr.Binary expr) {
@@ -72,13 +71,23 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
   }
 
   @Override
-  public String visitVarStmt(final Stmt.Var stmt) {
-    return parenthesize("var", new Expr.Variable(stmt.name), stmt.initializer);
+  public String visitGetExpr(final Expr.Get expr) {
+    return parenthesize("get", expr.object, new Expr.Variable(expr.name));
   }
 
   @Override
-  public String visitPrintStmt(final Stmt.Print stmt) {
-    return parenthesize("print", stmt.expression);
+  public String visitSetExpr(final Expr.Set expr) {
+    return parenthesize("set", expr.object, new Expr.Variable(expr.name), expr.value);
+  }
+
+  @Override
+  public String visitThisExpr(final Expr.This expr) {
+    return visitVariableExpr(new Expr.Variable(expr.keyword));
+  }
+
+  @Override
+  public String visitVarStmt(final Stmt.Var stmt) {
+    return parenthesize("var", new Expr.Variable(stmt.name), stmt.initializer);
   }
 
   @Override
@@ -128,6 +137,11 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     return parenthesize("return", stmt.value);
   }
 
+  @Override
+  public String visitClassStmt(final Stmt.Class stmt) {
+    return "(class " + stmt.name.lexeme + ")";
+  }
+
   private String parenthesize(String name, Expr... exprs) {
     StringBuilder builder = new StringBuilder();
     builder.append("(").append(name);
@@ -144,12 +158,10 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     block_indent = old_indent + "  ";
     StringBuilder builder = new StringBuilder();
     builder.append("(").append(name).append("\n");
-    block_depth += 1;
     for (final Stmt stmt : stmts) {
       if (stmt == null) continue;
       builder.append(print(stmt)).append("\n");
     }
-    block_depth -= 1;
     block_indent = old_indent;
     builder.append(old_indent).append(")");
     return builder.toString();

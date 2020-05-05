@@ -1,0 +1,13 @@
+class Test {
+  init(a, b) {
+    this.a = a;
+    this.b = b * b;
+  }
+
+  print() {
+    print("Hello, my things are " + this.a + " and " + this.b);
+  }
+}
+
+var test = Test(2, 3);
+test.print();

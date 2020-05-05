@@ -10,6 +10,7 @@ import java.util.List;
 
 public class Lox {
   static boolean hadError = false, hadRuntimeError = false;
+  static boolean allowFieldCreation = true;
   private static final Interpreter interpreter = new Interpreter();
 
   public static void main(final String[] args) throws IOException {

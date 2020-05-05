@@ -7,9 +7,11 @@ import static com.craftinginterpreters.lox.TokenType.*;
 
 /*
 program        → declaration* EOF ;
-declaration    → functionDecl
+declaration    → classDecl
+                | functionDecl
                 | variableDecl
                 | statement ;
+classDecl      → "class" IDENTIFIER "{" function* "}" ;
 functionDecl   → "fun" function ;
 function       → IDENTIFIER "(" parameters? ")" block ;
 parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
@@ -18,7 +20,6 @@ statement      → continueStmt
                 | breakStmt
                 | returnStmt
                 | exprStmt
-                | printStmt
                 | ifStmt
                 | whileStmt
                 | forStmt
@@ -33,9 +34,8 @@ whileStmt      → "while" "(" expression ")" statement ;
 ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
 block          → "{" declaration* "}" ;
 exprStmt       → expression ";" ;
-printStmt      → "print" expression ";" ;
 expression     → assignment ( "," assignment )* ;
-assignment     → IDENTIFIER "=" assignment
+assignment     → ( call "." )? IDENTIFIER "=" assignment
                 | ternary ;
 ternary        → logic_or ("?" expression ":" ternary)?  ;
 logic_or       → logic_and ( "or" logic_and )* ;
@@ -46,7 +46,7 @@ sum            → product? ( ( "-" | "+" ) product )* ;
 product        → unary? ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary
                 | call ;
-call           → primary ( "(" arguments? ")" )* ;
+call           → primary ( "(" arguments? ")"  | "." IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
 primary        → NUMBER | STRING
                 | "false" | "true" | "nil"
@@ -88,7 +88,7 @@ class Parser {
   }
 
   List<Stmt> parseProgram() {
-    List<Stmt> statements = new ArrayList<>();
+    final List<Stmt> statements = new ArrayList<>();
     while (!isAtEnd()) {
       statements.add(parseDeclaration());
     }
@@ -99,11 +99,23 @@ class Parser {
     try {
       if (match(VAR)) return parseVarDeclaration();
       if (match(FUN)) return parseFunction("function");
+      if (match(CLASS)) return parseClassDeclaration();
       return parseStatement();
-    } catch (ParseError error) {
+    } catch (final ParseError error) {
       synchronize();
       return null;
     }
+  }
+
+  private Stmt parseClassDeclaration() {
+    final Token name = consume(IDENTIFIER, "Expected class name.");
+    consume(LEFT_BRACE, "Expected '{' before class body.");
+    final List<Stmt.Function> methods = new ArrayList<>();
+    while (!check(RIGHT_BRACE) && !isAtEnd()) {
+      methods.add(parseFunction("method"));
+    }
+    consume(RIGHT_BRACE, "Expected '}' after class body.");
+    return new Stmt.Class(name, methods);
   }
 
   private Stmt.Function parseFunction(final String kind) {
@@ -132,7 +144,6 @@ class Parser {
   }
 
   private Stmt parseStatement() {
-    if (match(PRINT)) return parsePrintStatement();
     if (match(LEFT_BRACE)) return new Stmt.Block(parseBlock());
     if (match(IF)) return parseIfStatement();
     if (match(WHILE)) return parseWhileStatement();
@@ -223,12 +234,6 @@ class Parser {
     return new Stmt.Expression(value);
   }
 
-  private Stmt parsePrintStatement() {
-    final Expr value = parseExpression();
-    consume(SEMICOLON, "Expect ';' after value.");
-    return new Stmt.Print(value);
-  }
-
   private Expr parseExpression() {
     Expr result = parseAssignment();
     while (match(COMMA)) {
@@ -243,10 +248,14 @@ class Parser {
     if (match(EQUAL)) {
       final Token equals = previous();
       final Expr value = parseAssignment();
-      if (!(expr instanceof Expr.Variable))
-        error(equals, "Invalid assignment target.");
-      final Token name = ((Expr.Variable) expr).name;
-      return new Expr.Assign(name, value);
+      if (expr instanceof Expr.Variable) {
+        final Expr.Variable var = (Expr.Variable) expr;
+        return new Expr.Assign(var.name, value);
+      } else if (expr instanceof Expr.Get) {
+        final Expr.Get get = (Expr.Get) expr;
+        return new Expr.Set(get.object, get.name, value);
+      }
+      error(equals, "Invalid assignment target.");
     }
     return expr;
   }
@@ -358,6 +367,9 @@ class Parser {
     while (true) {
       if (match(LEFT_PAREN)) {
         expr = finishCall(expr);
+      } else if (match(DOT)) {
+        final Token name = consume(IDENTIFIER, "Expected property name after '.'.");
+        expr = new Expr.Get(expr, name);
       } else {
         break;
       }
@@ -383,6 +395,7 @@ class Parser {
     if (match(TRUE)) { return new Expr.Literal(true); }
     if (match(NIL)) { return new Expr.Literal(null); }
     if (match(NUMBER, STRING)) { return new Expr.Literal(previous().literal); }
+    if (match(THIS)) { return new Expr.This(previous()); }
     if (match(IDENTIFIER)) { return new Expr.Variable(previous()); }
     if (match(LEFT_PAREN)) {
       final Expr inner = parseExpression();
@@ -409,7 +422,6 @@ class Parser {
         case FOR:
         case IF:
         case WHILE:
-        case PRINT:
         case RETURN:
           return;
       }
