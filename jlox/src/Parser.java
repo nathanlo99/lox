@@ -121,20 +121,25 @@ class Parser {
 
   private Stmt.Function parseFunction(final String kind, final boolean is_static) {
     final Token name = consume(IDENTIFIER, "Expected " + kind + " name.");
-    consume(LEFT_PAREN, "Expected '(' after " + kind + " name .");
     final List<Token> parameters = new ArrayList<>();
-    if (!check(RIGHT_PAREN)) {
-      do {
-        if (parameters.size() >= 255) {
-          error(peek(), "Cannot have more than 255 parameters.");
-        }
-        parameters.add(consume(IDENTIFIER, "Expected parameter name."));
-      } while (match(COMMA));
+    boolean is_getter = true;
+    if (match(LEFT_PAREN)) {
+      is_getter = false;
+      if (!check(RIGHT_PAREN)) {
+        do {
+          if (parameters.size() >= 255) {
+            error(peek(), "Cannot have more than 255 parameters.");
+          }
+          parameters.add(consume(IDENTIFIER, "Expected parameter name."));
+        } while (match(COMMA));
+      }
+      consume(RIGHT_PAREN, "Expected ')' after paramters.");
+    } else if (kind != "method") { // Omission of parameter list only valid for methods
+      error(peek(), "Expected '(' after " + kind + " name .");
     }
-    consume(RIGHT_PAREN, "Expected ')' after paramters.");
     consume(LEFT_BRACE, "Expected '{' before " + kind + " body.");
     final List<Stmt> body = parseBlock();
-    return new Stmt.Function(name, parameters, body, is_static);
+    return new Stmt.Function(name, parameters, body, is_static, is_getter);
   }
 
   private Stmt parseVarDeclaration() {

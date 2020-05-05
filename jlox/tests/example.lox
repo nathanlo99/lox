@@ -1,16 +1,15 @@
 
 for (var i = 1; i < 5; i = i + 1) {
-  print i * i;
+  print(i * i);
 }
 
-/*
 class Duck {
   init(name) {
     this.name = name;
   }
 
   quack() {
-    print this.name + " quacks";
+    print(this.name + " quacks");
   }
 }
 
@@ -24,6 +23,18 @@ fun make_adder(n) {
   return adder;
 }
 var add5 = make_adder(5);
-print add5(1);
-print add5(100);
-*/
+print(add5(1));
+print(add5(100));
+
+class Circle {
+  init(radius) {
+    this.radius = radius;
+  }
+
+  area {
+    return 3.141592653 * this.radius * this.radius;
+  }
+}
+
+var circle = Circle(4);
+print(circle.area); // Prints roughly "50.2655".

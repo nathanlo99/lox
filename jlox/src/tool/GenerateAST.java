@@ -34,7 +34,7 @@ public class GenerateAST {
       "Block      : List<Stmt> statements",
       "If         : Expr condition, Stmt true_branch, Stmt false_branch",
       "While      : Expr condition, Stmt body",
-      "Function   : Token name, List<Token> params, List<Stmt> body, boolean is_static",
+      "Function   : Token name, List<Token> params, List<Stmt> body, boolean is_static, boolean is_getter",
       "Return     : Token keyword, Expr value",
       "Break      : Token keyword",
       "Continue   : Token keyword",

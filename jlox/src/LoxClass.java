@@ -8,8 +8,8 @@ class LoxClass extends LoxInstance implements LoxCallable {
   final String name;
   final Map<String, LoxFunction> methods;
 
-  LoxClass(final String name, final Map<String, LoxFunction> methods) {
-    super(null); this._class = this;
+  LoxClass(final String name, final Map<String, LoxFunction> methods, final Interpreter interpreter) {
+    super(null, interpreter); this._class = this;
     this.name = name;
     this.methods = methods;
   }
@@ -23,7 +23,7 @@ class LoxClass extends LoxInstance implements LoxCallable {
 
   @Override
   public Object call(final Interpreter interpreter, final List<Object> arguments, final Token caller) {
-    final LoxInstance instance = new LoxInstance(this);
+    final LoxInstance instance = new LoxInstance(this, interpreter);
     final LoxFunction initializer = findMethod("init");
     if (initializer != null)
       initializer.bind(instance).call(interpreter, arguments, caller);

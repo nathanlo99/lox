@@ -10,6 +10,7 @@ class Test {
 }
 
 fun run() {
+  return this;
   var test = Test(2, 3);
   test.print(); // "Hello, my things are 2 and 9"
 }

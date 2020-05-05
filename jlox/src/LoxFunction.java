@@ -8,19 +8,23 @@ class LoxFunction implements LoxCallable {
   private final boolean is_initializer;
   private final boolean is_method;
   private final boolean is_static;
+  final boolean is_getter;
 
-  LoxFunction(final Stmt.Function declaration, final Environment closure, final boolean is_method, final boolean is_initializer, boolean is_static) {
+  LoxFunction(final Stmt.Function declaration, final Environment closure,
+              final boolean is_method, final boolean is_initializer, final boolean is_static,
+              final boolean is_getter) {
     this.declaration = declaration;
     this.closure = closure;
     this.is_method = is_method;
     this.is_initializer = is_initializer;
     this.is_static = is_static;
+    this.is_getter = is_getter;
   }
 
   LoxFunction bind(final LoxInstance instance) {
     final Environment environment = new Environment(closure);
     environment.define("this", true, instance);
-    return new LoxFunction(declaration, environment, is_method, is_initializer, is_static);
+    return new LoxFunction(declaration, environment, is_method, is_initializer, is_static, is_getter);
   }
 
   @Override
