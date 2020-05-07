@@ -13,7 +13,7 @@ enum LoxFunctionType {
 }
 
 class LoxFunction implements LoxCallable {
-  private final Stmt.Function declaration;
+  final Stmt.Function declaration;
   private final Environment closure;
   final LoxFunctionType type;
   final boolean is_static;

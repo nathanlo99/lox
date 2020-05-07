@@ -25,7 +25,7 @@ class Doughnut {
 
 class BostonCream < Doughnut {
   init() {
-    super.init(); // calling super constructor
+    // super.init(); // calling super constructor
     println("Calling BostonCream::init()");
   }
 
@@ -61,3 +61,36 @@ BostonCream();
 HoneyCruller().cook();
 println("Total donuts: " + Doughnut.count);
 println("Total cooked: " + Doughnut.cooked);
+
+// Testing super init delegation
+class Base {
+  init(a, b, c) {
+    println("Base::init(" + a + ", " + b + ", " + c + ")");
+  }
+}
+
+class Derived1 < Base {
+  init(a, b, c) {
+    // Should automatically call Base::init(a, b, c)
+    println("Derived1::init(" + a + ", " + b + ", " + c + ")");
+  }
+}
+
+class Derived2 < Base {
+  init(a, b, c) {
+    super.init(a + 1, b + 1, c + 1);
+    println("Derived2::init(" + a + ", " + b + ", " + c + ")");
+  }
+}
+
+/*
+class Derived3 < Base {
+  init(a, b, c) {
+    println("Derived3::init(" + a + ", " + b + ", " + c + ")");
+    super.init(a, b, c); // Should error: super.init not first statement.
+  }
+}
+*/
+
+Derived1(1, 2, 3);
+Derived2(1, 2, 3);

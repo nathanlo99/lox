@@ -5,5 +5,10 @@ Calling HoneyCruller::init()
 Cooking: HoneyCruller
 Fry until golden brown.
 Coat with glaze.
+Notified from HoneyCruller
 Total donuts: 2
 Total cooked: 1
+Base::init(1, 2, 3)
+Derived1::init(1, 2, 3)
+Base::init(2, 3, 4)
+Derived2::init(1, 2, 3)

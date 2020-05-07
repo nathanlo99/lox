@@ -1,4 +1,37 @@
-- anonymous functions
-- resolver report error on unused local
-- setters
-- function overriding
+CHALLENGES TODO:
+- Functions:
+  - Function overriding: allow multiple functions with the same name but different arity to exist
+- Control flow:
+  - Anonymous functions
+- Resolving and Binding:
+  - Report error on unused local
+- Classes:
+  - Setters
+    - Determine the most convenient syntax for this
+
+CHALLENGES DONE:
+- Scanning:
+  - Nested C-style block comments
+- Parsing:
+  - Comma expression
+  - Ternary operator
+  - Error productions for missing left-hand operands
+- Evaluation:
+  - Extended addition (strings + numbers)
+  - Report division by zero as runtime error
+- Statements:
+  - Evaluate and print expressions
+  - Report uninitialized read as runtime error
+- Control flow:
+  - Break and continue statements
+- Classes:
+  - Static methods
+  - Static blocks
+  - (Static) getters
+- Inheritance:
+  - `super.init()`:
+    - Report error if super.init(...) present but not first statement
+    - Automatically call super.init(args) if not first statement
+- Misc:
+  - Add `.__class__` to get an instance's class
+  - Add `.name` to get a class' name

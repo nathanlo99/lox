@@ -13,6 +13,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     INITIALIZER
   }
   private FunctionType current_function = FunctionType.NONE;
+  private boolean super_init_allowed = true;
 
   private enum ClassType {
     NONE,
@@ -59,6 +60,27 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
       define(param);
     }
     resolve(function.body);
+    endScope();
+    current_function = enclosingFunction;
+  }
+
+  private void resolveInitializer(final Stmt.Class _class, final Stmt.Function function) {
+    if (function.is_static)
+      Lox.error(function.name, "Constructor cannot be static.");
+
+    final FunctionType enclosingFunction = current_function;
+    current_function = FunctionType.INITIALIZER;
+    beginScope();
+    for (final Token param : function.params) {
+      declare(param);
+      define(param);
+    }
+    final boolean old_allowed = super_init_allowed;
+    for (final Stmt statement : function.body) {
+      resolve(statement);
+      if (super_init_allowed) super_init_allowed = false;
+    }
+    super_init_allowed = old_allowed;
     endScope();
     current_function = enclosingFunction;
   }
@@ -151,12 +173,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
   @Override
   public Void visitReturnStmt(final Stmt.Return stmt) {
-    if (current_function == FunctionType.NONE) {
+    if (current_function == FunctionType.NONE)
       Lox.error(stmt.keyword, "Cannot return from top-level code.");
-    }
-    if (current_function == FunctionType.INITIALIZER && stmt.value != null) {
+    if (current_function == FunctionType.INITIALIZER && stmt.value != null)
       Lox.error(stmt.keyword, "Cannot return value from initializer.");
-    }
     resolve(stmt.value);
     return null;
   }
@@ -198,9 +218,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     for (final Stmt.Function method : stmt.methods) {
       final boolean is_initializer = method.name.lexeme.equals("init");
       final FunctionType declaration = is_initializer ? FunctionType.INITIALIZER : FunctionType.METHOD;
-      if (is_initializer && method.is_static)
-        Lox.error(method.name, "Constructor cannot be static.");
-      resolveFunction(method, declaration);
+      if (is_initializer)
+        resolveInitializer(stmt, method);
+      else
+        resolveFunction(method, declaration);
     }
     endScope();
     if (stmt.superclass != null) {
@@ -278,11 +299,12 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
   @Override
   public Void visitSuperExpr(final Expr.Super expr) {
-    if (current_class == ClassType.NONE) {
+    if (current_class == ClassType.NONE)
       Lox.error(expr.keyword, "Cannot use 'super' outside of a class.");
-    } else if (current_class != ClassType.SUBCLASS) {
+    else if (current_class != ClassType.SUBCLASS)
       Lox.error(expr.keyword, "Cannot use 'super' in a class with no superclass.");
-    }
+    else if (expr.method.lexeme.equals("init") && !super_init_allowed)
+      Lox.error(expr.keyword, "Calling super.init only allowed on first statement.");
     resolveLocal(expr, expr.keyword);
     return null;
   }
