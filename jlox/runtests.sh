@@ -2,9 +2,9 @@
 for file in tests/*.lox ; do
   echo $file
   if [ -f ${file/.lox/.in} ]; then
-    make run -s RUN_ARGS=$file > ${file/.lox/.out} < ${file/.lox/.in} ;
+    ./jlox $file > ${file/.lox/.out} < ${file/.lox/.in} ;
   else
-    make run -s RUN_ARGS=$file > ${file/.lox/.out} ;
+    ./jlox $file > ${file/.lox/.out} ;
   fi
 
   tmp=${file/tests/tests\/correct}
