@@ -98,10 +98,11 @@ class Weird {
   }
 
   callback {
-    fun adder(x) {
-      return this.n + x;
-    }
-    return adder;
+    return this.adder;
+  }
+
+  adder(x) {
+    return this.n + x;
   }
 }
 

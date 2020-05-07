@@ -1,0 +1,9 @@
+Calling Doughnut::init()
+Calling BostonCream::init()
+Calling Doughnut::init()
+Calling HoneyCruller::init()
+Cooking: HoneyCruller
+Fry until golden brown.
+Coat with glaze.
+Total donuts: 2
+Total cooked: 1

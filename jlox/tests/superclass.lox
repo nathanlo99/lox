@@ -1,0 +1,63 @@
+class Doughnut {
+  static {
+    this._count = 0;
+    this._cooked = 0;
+  }
+
+  init() {
+    println("Calling Doughnut::init()");
+    Doughnut._count = Doughnut._count + 1;
+  }
+
+  cook() {
+    println("Cooking: " + this.__class__.name);
+    Doughnut._cooked = Doughnut._cooked + 1;
+    println("Fry until golden brown.");
+  }
+
+  static callback(obj) {
+    println("Notified from " + obj.__class__.name);
+  }
+
+  static count { return this._count; }
+  static cooked { return this._cooked; }
+}
+
+class BostonCream < Doughnut {
+  init() {
+    super.init(); // calling super constructor
+    println("Calling BostonCream::init()");
+  }
+
+  static donut_count { // static getter calling super
+    return super.count;
+  }
+
+  cook() {
+    super.cook();
+    println("Pipe full of custard and coat with chocolate.");
+    super.__class__.callback(this);
+  }
+}
+
+class HoneyCruller < Doughnut {
+  init() {
+    super.init(); // calling super constructor
+    println("Calling HoneyCruller::init()");
+  }
+
+  static donut_count { // static getter calling super
+    return super.count;
+  }
+
+  cook() {
+    super.cook();
+    println("Coat with glaze.");
+    super.__class__.callback(this);
+  }
+}
+
+BostonCream();
+HoneyCruller().cook();
+println("Total donuts: " + Doughnut.count);
+println("Total cooked: " + Doughnut.cooked);

@@ -25,7 +25,8 @@ public class GenerateAST {
       "Call     : Expr callee, Token paren, List<Expr> arguments",
       "Get      : Expr object, Token name",
       "Set      : Expr object, Token name, Expr value",
-      "This     : Token keyword"
+      "This     : Token keyword",
+      "Super    : Token keyword, Token method"
     ));
 
     defineAst(outputDir, "Stmt", Arrays.asList(
@@ -38,7 +39,7 @@ public class GenerateAST {
       "Return       : Token keyword, Expr value",
       "Break        : Token keyword",
       "Continue     : Token keyword",
-      "Class        : Token name, List<Stmt.Function> methods"
+      "Class        : Token name, List<Stmt.Function> methods, Expr.Variable superclass"
     ));
   }
 

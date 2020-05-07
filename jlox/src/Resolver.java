@@ -16,7 +16,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
   private enum ClassType {
     NONE,
-    CLASS
+    CLASS,
+    SUBCLASS
   }
   private ClassType current_class = ClassType.NONE;
 
@@ -182,17 +183,29 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   @Override
   public Void visitClassStmt(final Stmt.Class stmt) {
     final ClassType parent_class = current_class;
-    current_class = ClassType.CLASS;
+    current_class = stmt.superclass == null ? ClassType.CLASS : ClassType.SUBCLASS;
     declare(stmt.name);
     define(stmt.name);
+    if (stmt.superclass != null && stmt.name.lexeme.equals(stmt.superclass.name.lexeme))
+      Lox.error(stmt.superclass.name, "Cannot inherit from self.");
+    resolve(stmt.superclass);
+    if (stmt.superclass != null) {
+      beginScope();
+      scopes.peek().put("super", true);
+    }
     beginScope();
     scopes.peek().put("this", true);
     for (final Stmt.Function method : stmt.methods) {
       final boolean is_initializer = method.name.lexeme.equals("init");
       final FunctionType declaration = is_initializer ? FunctionType.INITIALIZER : FunctionType.METHOD;
+      if (is_initializer && method.is_static)
+        Lox.error(method.name, "Constructor cannot be static.");
       resolveFunction(method, declaration);
     }
     endScope();
+    if (stmt.superclass != null) {
+      endScope();
+    }
     current_class = parent_class;
     return null;
   }
@@ -260,6 +273,17 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   public Void visitSetExpr(final Expr.Set expr) {
     resolve(expr.value);
     resolve(expr.object);
+    return null;
+  }
+
+  @Override
+  public Void visitSuperExpr(final Expr.Super expr) {
+    if (current_class == ClassType.NONE) {
+      Lox.error(expr.keyword, "Cannot use 'super' outside of a class.");
+    } else if (current_class != ClassType.SUBCLASS) {
+      Lox.error(expr.keyword, "Cannot use 'super' in a class with no superclass.");
+    }
+    resolveLocal(expr, expr.keyword);
     return null;
   }
 }

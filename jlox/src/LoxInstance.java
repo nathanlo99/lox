@@ -16,6 +16,8 @@ class LoxInstance {
   }
 
   Object get(final Token name) {
+    if (name.lexeme.equals("__class__")) return (LoxInstance)_class;
+    if (name.lexeme.equals("name") && this instanceof LoxClass) return _class.name;
     if (fields.containsKey(name.lexeme)) {
       return fields.get(name.lexeme);
     }
@@ -26,7 +28,11 @@ class LoxInstance {
         return bound_method.call(_class.interpreter, new ArrayList<Object>(), name);
       return bound_method;
     }
-
+    // Lastly, try the superclass static fields
+    if (_class.superclass != null) {
+      final Object result = _class.superclass.get(name);
+      if (result != null) return result;
+    }
     throw new RuntimeError(name, "Undefined property '" + name.lexeme + "' for class " + _class.name);
   }
 

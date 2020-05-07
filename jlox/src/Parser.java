@@ -11,7 +11,7 @@ declaration    → classDecl
                 | functionDecl
                 | variableDecl
                 | statement ;
-classDecl      → "class" IDENTIFIER "{" methodDecl* "}" ;
+classDecl      → "class" IDENTIFIER ( "<" IDENTIFIER )? {" methodDecl* "}" ;
 methodDecl     → IDENTIFIER "(" parameters? ")" block
                 | "static" IDENTIFIER "(" parameters? ")" block
                 | IDENTIFIER block
@@ -54,8 +54,9 @@ call           → primary ( "(" arguments? ")"  | "." IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
 primary        → NUMBER | STRING
                 | "false" | "true" | "nil"
-                | "(" _expression_ ")" ;
-                | IDENTIFIER;
+                | "(" _expression_ ")"
+                | IDENTIFIER
+                | "super" "." IDENTIFIER ;
 */
 
 class Parser {
@@ -113,13 +114,18 @@ class Parser {
 
   private Stmt parseClassDeclaration() {
     final Token name = consume(IDENTIFIER, "Expected class name.");
+    Expr.Variable superclass = null;
+    if (match(LESS)) {
+      consume(IDENTIFIER, "Expected superclass name.");
+      superclass = new Expr.Variable(previous());
+    }
     consume(LEFT_BRACE, "Expected '{' before class body.");
     final List<Stmt.Function> methods = new ArrayList<>();
     while (!check(RIGHT_BRACE) && !isAtEnd()) {
       methods.add(parseMethod());
     }
     consume(RIGHT_BRACE, "Expected '}' after class body.");
-    return new Stmt.Class(name, methods);
+    return new Stmt.Class(name, methods, superclass);
   }
 
   private Stmt.Function parseMethod() {
@@ -420,6 +426,12 @@ class Parser {
       final Expr inner = parseExpression();
       consume(RIGHT_PAREN, "Expect ')' after expression.");
       return new Expr.Grouping(inner);
+    }
+    if (match(SUPER)) {
+      final Token keyword = previous();
+      consume(DOT, "Expected '.' after super.");
+      final Token method = consume(IDENTIFIER, "Expected superclass method name.");
+      return new Expr.Super(keyword, method);
     }
     throw error(peek(), "Expected expression");
   }

@@ -152,9 +152,10 @@ abstract class Stmt {
   }
 
   static class Class extends Stmt {
-    Class(final Token name, final List<Stmt.Function> methods) {
+    Class(final Token name, final List<Stmt.Function> methods, final Expr.Variable superclass) {
       this.name = name;
       this.methods = methods;
+      this.superclass = superclass;
     }
 
     @Override
@@ -164,6 +165,7 @@ abstract class Stmt {
 
     final Token name;
     final List<Stmt.Function> methods;
+    final Expr.Variable superclass;
   }
 
   abstract <R> R accept(final Visitor<R> visitor);

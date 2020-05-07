@@ -261,6 +261,21 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   }
 
   @Override
+  public Object visitSuperExpr(final Expr.Super expr) {
+    final int distance = locals.get(expr);
+    final LoxClass superclass = (LoxClass)environment.getAt(distance, "super");
+    final LoxInstance object = (LoxInstance)environment.getAt(distance - 1, "this");
+    if (expr.method.lexeme.equals("__class__")) return superclass;
+    final LoxFunction method = superclass.findMethod(expr.method.lexeme);
+    if (method == null) {
+      throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.");
+    }
+    if (method.type == LoxFunctionType.INSTANCE_GETTER || method.type == LoxFunctionType.STATIC_GETTER)
+      return method.bind(object).call(this, new ArrayList<Object>(), expr.method);
+    return method.bind(object);
+  }
+
+  @Override
   public Void visitExpressionStmt(final Stmt.Expression stmt) {
     evaluate(stmt.expression);
     return null;
@@ -327,7 +342,15 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
   @Override
   public Void visitClassStmt(final Stmt.Class stmt) {
+    final Object superclass = evaluate(stmt.superclass);
+    if (stmt.superclass != null && !(superclass instanceof LoxClass))
+      throw new RuntimeError(stmt.superclass.name, "Superclass must be a class.");
+
     environment.define(stmt.name.lexeme, false, null);
+    if (stmt.superclass != null) {
+      environment = new Environment(environment);
+      environment.define("super", true, superclass);
+    }
     final Map<String, LoxFunction> methods = new HashMap<>();
     final List<Pair<LoxFunction, Token>> static_blocks = new ArrayList<>();
     for (final Stmt.Function method : stmt.methods) {
@@ -346,12 +369,15 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       else
         methods.put(method.name.lexeme, function);
     }
-    final LoxClass _class = new LoxClass(stmt.name.lexeme, methods, this);
+    final LoxClass _class = new LoxClass(stmt.name.lexeme, methods, (LoxClass)superclass, this);
     environment.assign(stmt.name, _class);
     for (final Pair<LoxFunction, Token> pair : static_blocks) {
       final LoxFunction static_method = pair.getKey();
       final Token keyword = pair.getValue();
       static_method.bind((LoxInstance)_class).call(this, new ArrayList<>(), keyword);
+    }
+    if (superclass != null) {
+      environment = environment.parent;
     }
     return null;
   }

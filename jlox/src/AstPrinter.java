@@ -86,6 +86,11 @@ class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
   }
 
   @Override
+  public String visitSuperExpr(final Expr.Super expr) {
+    return visitVariableExpr(new Expr.Variable(new Token(TokenType.IDENTIFIER, "super." + expr.method.lexeme)));
+  }
+
+  @Override
   public String visitVarStmt(final Stmt.Var stmt) {
     return parenthesize("var", new Expr.Variable(stmt.name), stmt.initializer);
   }
