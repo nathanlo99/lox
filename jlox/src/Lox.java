@@ -12,6 +12,7 @@ public class Lox {
   static boolean hadError = false, hadRuntimeError = false;
   static boolean allowFieldCreation = true;
   private static final Interpreter interpreter = new Interpreter();
+  private static String source[];
 
   public static void main(final String[] args) throws IOException {
     if (args.length > 1) {
@@ -47,6 +48,7 @@ public class Lox {
   }
 
   private static void run(final String source) {
+    Lox.source = source.split("\\r?\\n");
     final List<Token> tokens = new Scanner(source).scanTokens();
     final List<Stmt> statements = new Parser(tokens).parseProgram();
     if (hadError) return;
@@ -63,11 +65,15 @@ public class Lox {
 
   static void runtimeError(final RuntimeError error) {
     System.err.println("RuntimeError [" + error.token.line + ":" + error.token.start_column + "] " + error.getMessage());
+    System.err.println(Lox.source[error.token.line - 1]);
+    System.err.println(new String(new char[error.token.start_column - 1]).replace("\0", " ") + "^");
     hadRuntimeError = true;
   }
 
   private static void report(final int line, final int column, final String where, final String message) {
     System.err.println("[" + line + ":" + column + "] Error" + where + ": " + message);
+    System.err.println(Lox.source[line - 1]);
+    System.err.println(new String(new char[column - 1]).replace("\0", " ") + "^");
     hadError = true;
   }
 

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import javafx.util.Pair;
+import java.util.Scanner;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   final Environment globals = new Environment();
@@ -34,6 +35,21 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       if (!isTruthy(arguments.get(0)))
         throw new RuntimeError(caller, "Assertion failed");
       return null;
+    }));
+
+    globals.define("nextLine", true, new LoxNative(0, (interpreter, arguments, caller) -> {
+      final java.util.Scanner scanner = new Scanner(System.in);
+      return scanner.hasNextLine() ? scanner.nextLine() : null;
+    }));
+
+    globals.define("nextInt", true, new LoxNative(0, (interpreter, arguments, caller) -> {
+      final java.util.Scanner scanner = new Scanner(System.in);
+      return scanner.hasNextInt() ? Double.valueOf(scanner.nextInt()) : null;
+    }));
+
+    globals.define("nextDouble", true, new LoxNative(0, (interpreter, arguments, caller) -> {
+      final java.util.Scanner scanner = new Scanner(System.in);
+      return scanner.hasNextDouble() ? Double.valueOf(scanner.nextDouble()) : null;
     }));
   }
 
@@ -114,9 +130,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     return false;
   }
 
-  private void assertNumerical(final Token operator, final Object operand) {
+  private void assertNumerical(final Token operator, final Object operand, final String side) {
     if (!(operand instanceof Double))
-      throw new RuntimeError(operator, "Operand must be numerical");
+      throw new RuntimeError(operator,
+        side + " operand to '" + operator.lexeme + "' must be numerical, got "
+        + (operand == null ? "<null>" : operand.getClass().getName()) + " instead.");
   }
 
   @Override
@@ -134,7 +152,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final Object right = evaluate(expr.right);
     switch (expr.operator.type) {
       case MINUS:
-        assertNumerical(expr.operator, right);
+        assertNumerical(expr.operator, right, "Right");
         return -(double)right;
       case BANG:
         return !isTruthy(right);
@@ -154,27 +172,27 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
         throw new RuntimeError(expr.operator, "Operands to '+' must be two numbers or strings");
       case MINUS:
-        assertNumerical(expr.operator, left); assertNumerical(expr.operator, right);
+        assertNumerical(expr.operator, left, "Left"); assertNumerical(expr.operator, right, "Right");
         return (double) left - (double) right;
       case SLASH:
-        assertNumerical(expr.operator, left); assertNumerical(expr.operator, right);
+        assertNumerical(expr.operator, left, "Left"); assertNumerical(expr.operator, right, "Right");
         if ((double) right == 0.0)
           throw new RuntimeError(expr.operator, "Division by zero");
         return (double) left / (double) right;
       case STAR:
-        assertNumerical(expr.operator, left); assertNumerical(expr.operator, right);
+        assertNumerical(expr.operator, left, "Left"); assertNumerical(expr.operator, right, "Right");
         return (double) left * (double) right;
       case GREATER:
-        assertNumerical(expr.operator, left); assertNumerical(expr.operator, right);
+        assertNumerical(expr.operator, left, "Left"); assertNumerical(expr.operator, right, "Right");
         return (double) left > (double) right;
       case GREATER_EQUAL:
-        assertNumerical(expr.operator, left); assertNumerical(expr.operator, right);
+        assertNumerical(expr.operator, left, "Left"); assertNumerical(expr.operator, right, "Right");
         return (double) left >= (double) right;
       case LESS:
-        assertNumerical(expr.operator, left); assertNumerical(expr.operator, right);
+        assertNumerical(expr.operator, left, "Left"); assertNumerical(expr.operator, right, "Right");
         return (double) left < (double) right;
       case LESS_EQUAL:
-        assertNumerical(expr.operator, left); assertNumerical(expr.operator, right);
+        assertNumerical(expr.operator, left, "Left"); assertNumerical(expr.operator, right, "Right");
         return (double) left <= (double) right;
       case EQUAL_EQUAL:
         return isEqual(left, right);

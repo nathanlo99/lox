@@ -8,6 +8,10 @@ CHALLENGES TODO:
 - Classes:
   - Setters
     - Determine the most convenient syntax for this
+- Misc:
+  - Make I/O feasible by adding input functions
+    - Implement native `getch` or `getline` functions
+    - Add syntax to index into strings, or at least decompose strings
 
 CHALLENGES DONE:
 - Scanning:

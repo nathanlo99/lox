@@ -1,0 +1,8 @@
+
+var num_repeats = nextInt();
+println("num_repeats = " + num_repeats);
+for (var i = 0; i < num_repeats; i = i + 1) {
+  var a = nextDouble();
+  var b = nextDouble();
+  print(a + b);
+}
