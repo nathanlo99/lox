@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+import javafx.util.Pair;
 
 class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   private enum FunctionType {
@@ -22,8 +23,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   }
   private ClassType current_class = ClassType.NONE;
 
+  private enum VariableState {
+    NONE,
+    DECLARED,
+    DEFINED,
+    ACCESSED
+  }
+
   private final Interpreter interpreter;
-  private final Stack<Map<String, Boolean>> scopes = new Stack<>();
+  private final Stack<Map<String, Pair<VariableState, Token>>> scopes = new Stack<>();
 
   Resolver(final Interpreter interpreter) {
     this.interpreter = interpreter;
@@ -44,6 +52,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   private void resolveLocal(final Expr expr, final Token name) {
     for (int i = scopes.size() - 1; i >= 0; i--) {
       if (scopes.get(i).containsKey(name.lexeme)) {
+        scopes.get(i).put(name.lexeme, new Pair<>(VariableState.ACCESSED, name));
         interpreter.resolve(expr, scopes.size() - 1 - i);
         return;
       }
@@ -87,23 +96,35 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
   private void declare(final Token name) {
     if (scopes.isEmpty()) return;
-    final Map<String, Boolean> scope = scopes.peek();
+    final Map<String, Pair<VariableState, Token>> scope = scopes.peek();
     if (scope.containsKey(name.lexeme)) {
       Lox.error(name, "Variable with this name already declared in this scope.");
     }
-    scope.put(name.lexeme, false);
+    scope.put(name.lexeme, new Pair<>(VariableState.DECLARED, name));
   }
 
   private void define(final Token name) {
     if (scopes.isEmpty()) return;
-    scopes.peek().put(name.lexeme, true);
+    scopes.peek().put(name.lexeme, new Pair<>(VariableState.DEFINED, name));
   }
 
   private void beginScope() {
-    scopes.push(new HashMap<String, Boolean>());
+    scopes.push(new HashMap<String, Pair<VariableState, Token>>());
   }
 
   private void endScope() {
+    // Variables are going out of scope! If never accessed, report error
+    final Map<String, Pair<VariableState, Token>> scope = scopes.peek();
+    for (Map.Entry<String, Pair<VariableState, Token>> entry : scope.entrySet()) {
+      final String variable_name = entry.getKey();
+      if (variable_name.equals("super") || variable_name.equals("this"))
+        continue; // Don't warn if this or super are unused
+      final Pair<VariableState, Token> pair = entry.getValue();
+      final VariableState state = pair.getKey();
+      final Token token = pair.getValue();
+      if (state != VariableState.ACCESSED)
+        Lox.warning(token, "Unused local variable '" + entry.getKey() + "'");
+    }
     scopes.pop();
   }
 
@@ -125,7 +146,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
   @Override
   public Void visitVariableExpr(final Expr.Variable expr) {
-    if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
+    if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) != null && scopes.peek().get(expr.name.lexeme).getKey() == VariableState.DECLARED) {
       Lox.error(expr.name, "Cannot read local variable in its own initializer.");
     }
     resolveLocal(expr, expr.name);
@@ -211,10 +232,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     resolve(stmt.superclass);
     if (stmt.superclass != null) {
       beginScope();
-      scopes.peek().put("super", true);
+      scopes.peek().put("super", new Pair<>(VariableState.DEFINED, new Token(TokenType.IDENTIFIER, "")));
     }
     beginScope();
-    scopes.peek().put("this", true);
+    scopes.peek().put("this", new Pair<>(VariableState.DEFINED, new Token(TokenType.IDENTIFIER, "")));
     for (final Stmt.Function method : stmt.methods) {
       final boolean is_initializer = method.name.lexeme.equals("init");
       final FunctionType declaration = is_initializer ? FunctionType.INITIALIZER : FunctionType.METHOD;

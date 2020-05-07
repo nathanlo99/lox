@@ -3,8 +3,6 @@ CHALLENGES TODO:
   - Function overriding: allow multiple functions with the same name but different arity to exist
 - Control flow:
   - Anonymous functions
-- Resolving and Binding:
-  - Report error on unused local
 - Classes:
   - Setters
     - Determine the most convenient syntax for this
@@ -28,6 +26,8 @@ CHALLENGES DONE:
   - Static methods
   - Static blocks
   - (Static) getters
+- Resolving and Binding:
+  - Report error on unused local
 - Inheritance:
   - `super.init()`:
     - Report error if super.init(...) present but not first statement

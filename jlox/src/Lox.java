@@ -60,28 +60,26 @@ public class Lox {
   }
 
   static void error(final int line, final int column, final String message) {
-    report(line, column, "", message);
+    report("Error", line, column, message);
   }
 
   static void runtimeError(final RuntimeError error) {
-    System.err.println("RuntimeError [" + error.token.line + ":" + error.token.start_column + "] " + error.getMessage());
-    System.err.println(Lox.source[error.token.line - 1]);
-    System.err.println(new String(new char[error.token.start_column - 1]).replace("\0", " ") + "^");
+    report("RuntimeError", error.token.line, error.token.start_column, error.getMessage());
     hadRuntimeError = true;
   }
 
-  private static void report(final int line, final int column, final String where, final String message) {
-    System.err.println("[" + line + ":" + column + "] Error" + where + ": " + message);
+  private static void report(final String type, final int line, final int column, final String message) {
+    System.err.println(type + ": " + message + " [" + line + ":" + column + "] ");
     System.err.println(Lox.source[line - 1]);
     System.err.println(new String(new char[column - 1]).replace("\0", " ") + "^");
-    hadError = true;
+  }
+
+  static void warning(final Token token, final String message) {
+    report("Warning", token.line, token.start_column, message);
   }
 
   static void error(final Token token, final String message) {
-    if (token.type == TokenType.EOF) {
-      report(token.line, token.start_column, " at end", message);
-    } else {
-      report(token.line, token.start_column, " at '" + token.lexeme + "'", message);
-    }
+    report("Error", token.line, token.start_column, message);
+    hadError = true;
   }
 }
