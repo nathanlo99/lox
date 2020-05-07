@@ -11,46 +11,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   final Environment globals = new Environment();
   private Environment environment = globals;
   private final Map<Expr, Integer> locals = new HashMap<>();
+  final java.util.Scanner system_in = new Scanner(System.in);
 
   Interpreter() {
-    globals.define("clock", true, new LoxNative(0, (interpreter, arguments, caller) -> {
-      return (double)System.currentTimeMillis() / 1000.0;
-    }));
-
-    globals.define("print", true, new LoxNative(1, (interpreter, arguments, caller) -> {
-      System.out.print(stringify(arguments.get(0)));
-      return null;
-    }));
-    globals.define("println", true, new LoxNative(1, (interpreter, arguments, caller) -> {
-      System.out.println(stringify(arguments.get(0)));
-      return null;
-    }));
-
-    globals.define("random", true, new LoxNative(2, (interpreter, arguments, caller) -> {
-      final double a = (Double)arguments.get(0), b = (Double)arguments.get(1);
-      return Math.random() * (b - a) + a;
-    }));
-
-    globals.define("assert", true, new LoxNative(1, (interpreter, arguments, caller) -> {
-      if (!isTruthy(arguments.get(0)))
-        throw new RuntimeError(caller, "Assertion failed");
-      return null;
-    }));
-
-    globals.define("nextLine", true, new LoxNative(0, (interpreter, arguments, caller) -> {
-      final java.util.Scanner scanner = new Scanner(System.in);
-      return scanner.hasNextLine() ? scanner.nextLine() : null;
-    }));
-
-    globals.define("nextInt", true, new LoxNative(0, (interpreter, arguments, caller) -> {
-      final java.util.Scanner scanner = new Scanner(System.in);
-      return scanner.hasNextInt() ? Double.valueOf(scanner.nextInt()) : null;
-    }));
-
-    globals.define("nextDouble", true, new LoxNative(0, (interpreter, arguments, caller) -> {
-      final java.util.Scanner scanner = new Scanner(System.in);
-      return scanner.hasNextDouble() ? Double.valueOf(scanner.nextDouble()) : null;
-    }));
+    for (final LoxNative native_func : LoxNative.getNativeFunctions()) {
+      globals.define(native_func.name, true, native_func);
+    }
   }
 
   public void interpret(final List<Stmt> statements) {
@@ -93,6 +59,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
   }
 
+  public static String getClassName(final Object object) {
+    return object == null ? "<null>" : object.getClass().getName();
+  }
+
   public void executeBlock(final List<Stmt> statements, final Environment environment) {
     final Environment previous = this.environment;
     try {
@@ -104,7 +74,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
   }
 
-  private String stringify(final Object object) {
+  public static String stringify(final Object object) {
     if (object == null) return "nil";
     final String result = object.toString();
     if (object instanceof Double && result.endsWith(".0"))
@@ -112,7 +82,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     return result;
   }
 
-  private boolean isTruthy(final Object object) {
+  public static boolean isTruthy(final Object object) {
     if (object == null) return false;
     if (object instanceof Boolean) return (boolean) object;
     return true;
@@ -126,15 +96,14 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     if (a instanceof Double && b instanceof Double)
       return (double) a == (double) b;
     if (a instanceof String && b instanceof String)
-      return (String) a == (String) b;
+      return a.equals(b);
     return false;
   }
 
   private void assertNumerical(final Token operator, final Object operand, final String side) {
     if (!(operand instanceof Double))
       throw new RuntimeError(operator,
-        side + " operand to '" + operator.lexeme + "' must be numerical, got "
-        + (operand == null ? "<null>" : operand.getClass().getName()) + " instead.");
+        side + " operand to '" + operator.lexeme + "' must be numerical, got " + getClassName(operand) + " instead.");
   }
 
   @Override

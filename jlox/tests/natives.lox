@@ -1,8 +1,42 @@
 
+class String {
+  init(str) { this.str = str; }
+  get(idx) { return substr(this.str, idx, idx + 1); }
+  substr(start, end) { return substr(this.str, start, end); }
+  size { return length(this.str); }
+}
+
 var num_repeats = nextInt();
 println("num_repeats = " + num_repeats);
 for (var i = 0; i < num_repeats; i = i + 1) {
   var a = nextDouble();
   var b = nextDouble();
-  print(a + b);
+  if (a == nil)
+    println("Got a = nil");
+  else if (b == nil)
+    println("Got b = nil");
+  else
+    println(a + b);
+}
+
+num_repeats = nextInt(); nextLine(); // Skip trailing newline char
+for (var i = 0; i < num_repeats; i = i + 1) {
+  var line = nextLine();
+  var string = String(line);
+  println("Line received: " + line);
+  assert(string.str == line);
+  if (length(line) > 3) {
+  // println("substr(1, 3, line) is.. " + substr(1, 3, line)); // uh oh!
+    println("substr(line, 1, 3) is.. " + string.substr(1, 3));
+    assert(substr(line, 1, 3) == string.substr(1, 3));
+  } else {
+    println("Line too short...");
+  }
+}
+
+
+
+var test_string = String("Hello, World!");
+for (var i = 0; i < test_string.size; i = i + 1) {
+  println("Index " + i + ": " + test_string.get(i));
 }
