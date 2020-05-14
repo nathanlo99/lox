@@ -1,4 +1,8 @@
 .DS_Store
 jlox/build
+jlox/jlox
 *.class
 tests/*.diff
+clox/src/*.o
+clox/src/*.d
+clox/clox
